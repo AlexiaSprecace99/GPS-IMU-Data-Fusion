@@ -7,12 +7,12 @@ meas = [pos;vel;acc];
 
 %Initialization of Matlab Function
 f = matlabFunction(F);
-
+actual_meas = [0 0 0 0 0 0]';
 k = 1;
 log_EKF = [];
-selection_vector = [false false false false false false false false false]';  % seleziona quali misure sono state usate all'iterazione corrente
-flag = [0 0 0 0 0 0 0 0 0]';  % tiene traccia dell'indice delle misure più recenti già utilizzate per ogni sensore
-actual_meas = [0 0 0 0 0 0 0 0 0]';   % contiene i valori delle misure utilizzate all'iterazione corrente
+selection_vector = [false false]';  % seleziona quali misure sono state usate all'iterazione corrente
+flag = [0 0]';  % tiene traccia dell'indice delle misure più recenti già utilizzate per ogni sensore
+actual_meas = [0 0 0 0 0 0]';   % contiene i valori delle misure utilizzate all'iterazione corrente
 log_EKF.x_hat(:,1) = X_hat;
 for t = dt:dt:t_max
     %prediction step
@@ -25,7 +25,9 @@ for t = dt:dt:t_max
    % error_x(1,k) = trajectory_gen(1,k)-log_EKF.x_hat(1,k); 
     %error_y(1,k) = trajectory_gen(2,k)-log_EKF.x_hat(2,k);
     %error_z(1,k) = trajectory_gen(3,k)-log_EKF.x_hat(3,k);
-
+    
+    [actual_meas, selection_vector, flag] = getActualMeas(ts,ta, flag, selection_vector, t);
+    
     % correction step
     [X_hat, P] = correction_KF(X_hat, P, R_gps,R_imu,H_gps,H_imu, meas, pos,acc,selection_vector,k);
 
@@ -56,6 +58,44 @@ X_hat(7:9,1) = log_vars.acceleration_gen(:,k);
 X_hat = F*X_hat;
 P = F*P*F'+Q;
 end
+
+function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selection_vector,t)
+    count = 0;
+    count_size_meas = 0;
+    %for gps
+    while(((flag(1)) < size(ta.data,3)) && (ta.time(flag(1)+1) <= t))
+        count = count + 1;
+        flag(1) = flag(1) + 1;
+    end
+    count_size_meas = 0;
+    if(count == 0)
+        selection_vector(1) = false;    % non c'è nessuna misura disponibile
+    else
+        count_size_meas = count_size_meas + 1;
+        selection_vector(1) = true;     % la misura è disponibile
+        actual_meas = ta.data(:,flag(1));    % salvo la misura su meas[]
+    end
+
+    %for imu
+    count= 0;
+    while(((flag(2)) < size(ts.data,3)) && (ts.time(flag(2)+1) <= t))
+        count = count + 1;
+        flag(2) = flag(2) + 1;
+    end
+    if(count == 0)
+        selection_vector(2) = false;    % non c'è nessuna misura disponibile
+    else
+        if(count_size_meas > 0)
+        selection_vector(2) = true;     % la misura è disponibile
+        actual_meas = [actual_meas;ts.data(:,flag(2))];    % salvo la misura su meas[]
+        else
+        selection_vector(2) = true;     % la misura è disponibile
+        actual_meas = ta.data(:,flag(2));    % salvo la misura su meas[]  
+        end
+    end
+end
+
+
 
 function [X_hat, P] = correction_KF(X_hat, P, R_gps,R_imu,H_gps,H_imu, meas,pos,acc, selection_vector,k)
 

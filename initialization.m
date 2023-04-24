@@ -31,7 +31,7 @@ X_hat = X_start + (std_dev_init)*randn(size(X_start,1),1);
 P = diag(std_dev_init)^2; 
 
 %Dynamic Matrix
-dt = 0.1; %Sample Time of the filter
+dt = 1/100; %Sample Time of the filter
 F = [eye(3) T*eye(3) (T^2)*eye(3)/2; zeros(3) eye(3) T*eye(3); zeros(3) zeros(3) eye(3)];
 
 %Sensor Parameter

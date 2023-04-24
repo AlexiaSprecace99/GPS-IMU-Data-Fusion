@@ -6,7 +6,7 @@ velocity_rif=[]; %Matrix for velocity reference
 acceleration_rif=[]; %Matrix for acceleration reference 
 log_vars = [];
 
-Ts=0.1;
+Ts=1/75;
 te=500; %Final time
 
 x_start=[1 1 1]'; %Starting position
@@ -69,5 +69,20 @@ log_vars.trajectory_gen = trajectory_gen;
 log_vars.velocity_gen = velocity_gen;
 log_vars.acceleration_gen = acceleration_gen;
 plot3(trajectory_gen(1,:),trajectory_gen(2,:),trajectory_gen(3,:));
+
+
+%Creation of timeseries for acceleration data
+t_imu = 0:Ts:t_max;
+ts = timeseries(acceleration_gen,t_imu);
+
+%Creation of timeseries for position data
+j = 1;
+for i = 1:15:37501
+pos_gps(:,j) = trajectory_gen(:,i);
+j = j+1;
+end
+t_gps = 0:dt_gps:t_max;
+ta = timeseries(pos_gps,t_gps);
+%Initialization of Matlab Function
 
 grid on
