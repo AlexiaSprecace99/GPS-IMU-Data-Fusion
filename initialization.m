@@ -54,6 +54,12 @@ H_gps = [eye(3) zeros(3) zeros(3)];
 H_imu = [zeros(3) zeros(3) eye(3)];
 
 %Simulation
-t_max = 500;
+t_max = 50;
+
+%Measure matrix 
+H = [eye(3) zeros(3) zeros(3);zeros(3) zeros(3) eye(3)];
+
+%Covariance matrix for sensor noise
+R = blkdiag(R_gps,R_imu);
 
 

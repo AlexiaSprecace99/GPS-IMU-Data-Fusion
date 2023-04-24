@@ -4,10 +4,11 @@ pos = log_vars.trajectory_gen;
 vel = log_vars.velocity_gen;
 acc = log_vars.acceleration_gen;
 meas = [pos;vel;acc];
+rand_pos = 0.01*randn(3,1);
+rand_acc = 0.05*randn(3,1);
 
 %Initialization of Matlab Function
 f = matlabFunction(F);
-actual_meas = [0 0 0 0 0 0]';
 k = 1;
 log_EKF = [];
 selection_vector = [false false]';  % seleziona quali misure sono state usate all'iterazione corrente
@@ -26,30 +27,29 @@ for t = dt:dt:t_max
     %error_y(1,k) = trajectory_gen(2,k)-log_EKF.x_hat(2,k);
     %error_z(1,k) = trajectory_gen(3,k)-log_EKF.x_hat(3,k);
     
-    [actual_meas, selection_vector, flag] = getActualMeas(ts,ta, flag, selection_vector, t);
-    
+    [actual_meas, selection_vector, flag] = getActualMeas(ts,ta, flag, selection_vector, t,rand_pos,rand_acc);
     % correction step
-    [X_hat, P] = correction_KF(X_hat, P, R_gps,R_imu,H_gps,H_imu, meas, pos,acc,selection_vector,k);
+    [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t);
 
 
-    error_x(1,k) = trajectory_gen(1,k)-log_EKF.x_hat(1,k); 
+    error_x(1,k) = trajectory_gen(1,k)-log_EKF.x_hat(1,k);
     error_y(1,k) = trajectory_gen(2,k)-log_EKF.x_hat(2,k);
     error_z(1,k) = trajectory_gen(3,k)-log_EKF.x_hat(3,k);
 
     k = k + 1;
 end
-
+figure(1);
 plot3(trajectory_gen(1,:),trajectory_gen(2,:),trajectory_gen(3,:),'r');
-hold on;
+hold on; grid on;
 plot3(log_EKF.x_hat(1,:),log_EKF.x_hat(2,:),log_EKF.x_hat(3,:),'b');
-grid on;
-figure; grid on; 
+
+figure(2); grid on; 
 plot(error_x);
 
-figure; grid on; 
+figure(3); grid on; 
 plot(error_y);
 
-figure; grid on; 
+figure(4); grid on; 
 plot(error_z);
 
 function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,log_vars,k)
@@ -59,8 +59,9 @@ X_hat = F*X_hat;
 P = F*P*F'+Q;
 end
 
-function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selection_vector,t)
+function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selection_vector,t,rand_pos,rand_acc)
     count = 0;
+    actual_meas = [];
     count_size_meas = 0;
     %for gps
     while(((flag(1)) < size(ta.data,3)) && (ta.time(flag(1)+1) <= t))
@@ -73,8 +74,10 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
     else
         count_size_meas = count_size_meas + 1;
         selection_vector(1) = true;     % la misura è disponibile
-        actual_meas = ta.data(:,flag(1));    % salvo la misura su meas[]
+        actual_meas = ta.data(:,flag(1))+rand_pos;    % salvo la misura su meas[]
+        
     end
+
 
     %for imu
     count= 0;
@@ -86,29 +89,44 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
         selection_vector(2) = false;    % non c'è nessuna misura disponibile
     else
         if(count_size_meas > 0)
-        selection_vector(2) = true;     % la misura è disponibile
-        actual_meas = [actual_meas;ts.data(:,flag(2))];    % salvo la misura su meas[]
+            selection_vector(2) = true;     % la misura è disponibile
+            actual_meas = [actual_meas;ts.data(:,flag(2))]+[rand_pos;rand_acc];    % salvo la misura su meas[]
         else
-        selection_vector(2) = true;     % la misura è disponibile
-        actual_meas = ta.data(:,flag(2));    % salvo la misura su meas[]  
+            selection_vector(2) = true;     % la misura è disponibile
+            actual_meas = ts.data(:,flag(2))+rand_acc;    % salvo la misura su meas[]  
         end
     end
 end
 
 
 
-function [X_hat, P] = correction_KF(X_hat, P, R_gps,R_imu,H_gps,H_imu, meas,pos,acc, selection_vector,k)
+function [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t)
+    counter = 0;
+    if selection_vector(1) == false  %if there aren't any information of position
+        H(1:3,:) = [];
+        R(1:3,:) = [];
+        R(:,1:3) = [];
+        counter = counter+3;
+    end
 
-H = [eye(3) zeros(3) zeros(3);zeros(3) zeros(3) eye(3)];
-R = blkdiag(R_gps,R_imu);
-z = [pos+0.01*randn(3,1);acc+0.05*randn(3,1)];
-innovation = z(:,k)-H*X_hat;
+    if selection_vector(2) == false  %if there aren't any information of acceleration
+        H(4-counter:6-counter,:) = [];
+        R(4-counter:6-counter,:) = [];
+        R(:,4-counter:6-counter) = [];
+    end
 
+    
+    
+innovation = actual_meas-H*X_hat;
+if(isempty(innovation) == true)  % if there aren't any measures
+        X_hat = X_hat;
+        P = P;
+else
 S = R+H*P*H'; %6x6
 L = P*H'*inv(S); %9x6
 X_hat = X_hat + L*innovation; %9x1
 P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9
-
+end
  %Compute innovation for imu
 %  R_i = inv(R_imu(7:9,7:9));
 %  Rimu_inv = blkdiag(0,0,0,0,0,0,R_i);

@@ -1,5 +1,5 @@
 clc
-
+initialization
 %% Reference Generation
 trajectory_rif=[]; %Matrix for position reference
 velocity_rif=[]; %Matrix for velocity reference
@@ -7,7 +7,7 @@ acceleration_rif=[]; %Matrix for acceleration reference
 log_vars = [];
 
 Ts=1/75;
-te=500; %Final time
+te=(t_max/dt)/75; %Final time
 
 x_start=[1 1 1]'; %Starting position
 v_start=[0 0 0]'; %Starting velocity
@@ -72,16 +72,16 @@ plot3(trajectory_gen(1,:),trajectory_gen(2,:),trajectory_gen(3,:));
 
 
 %Creation of timeseries for acceleration data
-t_imu = 0:Ts:t_max;
+t_imu = 0:Ts:te;
 ts = timeseries(acceleration_gen,t_imu);
 
 %Creation of timeseries for position data
 j = 1;
-for i = 1:15:37501
+for i = 1:15:size(trajectory_gen,2)
 pos_gps(:,j) = trajectory_gen(:,i);
 j = j+1;
 end
-t_gps = 0:dt_gps:t_max;
+t_gps = 0:dt_gps:te;
 ta = timeseries(pos_gps,t_gps);
 %Initialization of Matlab Function
 
