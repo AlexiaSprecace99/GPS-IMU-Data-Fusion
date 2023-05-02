@@ -60,7 +60,7 @@ plot(error_z);
 function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,log_vars,k)
 F = feval(f,dt);
 X_hat(7:9,1) = log_vars.acceleration_gen(:,k);
-X_hat = F*X_hat;
+X_hat = F*X_hat+[0.01*randn(9,1)];
 P = F*P*F'+Q;
 end
 
@@ -79,7 +79,7 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
     else
         count_size_meas = count_size_meas + 1;
         selection_vector(1) = true;     % la misura è disponibile
-        actual_meas = ta.data(:,flag(1))+ 0.1*randn(3,1);    % salvo la misura su meas[]
+        actual_meas = ta.data(:,flag(1)); %+ 0.01*randn(3,1);    % salvo la misura su meas[]
         
     end
 
@@ -95,10 +95,10 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
     else
         if(count_size_meas > 0)
             selection_vector(2) = true;     % la misura è disponibile
-            actual_meas = [actual_meas;ts.data(:,flag(2))]+[0.1*randn(3,1);0.1*randn(3,1)];    % salvo la misura su meas[]
+            actual_meas = [actual_meas;ts.data(:,flag(2))]; %+[0.01*randn(3,1);0.05*randn(3,1)];    % salvo la misura su meas[]
         else
             selection_vector(2) = true;     % la misura è disponibile
-            actual_meas = ts.data(:,flag(2)) + 0.1*randn(3,1);    % salvo la misura su meas[]  
+            actual_meas = ts.data(:,flag(2)) ;%+ 0.05*randn(3,1);    % salvo la misura su meas[]  
         end
     end
 end
@@ -107,6 +107,7 @@ end
 
 function [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t,k)
     counter = 0;
+    t
     if selection_vector(1) == false  %if there aren't any information of position
         H(1:3,:) = [];
         R(1:3,:) = [];
@@ -128,68 +129,46 @@ if (selection_vector(1) == true && selection_vector(2) == true) %ci sono entramb
     innovation_imu = innovation(4:6);
     q_gps = innovation_gps'*inv(S_gps)*innovation_gps;
     q_imu = innovation_imu'*inv(S_imu)*innovation_imu;
-    mu_gps = get_mf_valid(q_gps);
-    mu_imu = get_mf_valid(q_imu);
-    mu_gps_imu = mu_gps*mu_imu;
-    beta_gps = mu_gps-mu_gps_imu;
-    beta_imu = mu_imu-mu_gps_imu;
-    beta_gps_imu = mu_gps_imu;
-    beta0= 1-mu_gps-mu_imu+mu_gps_imu;
-    if(q_gps > 7.8 && q_imu < 7.8) %posso prendere solo le misure della imu
+    if(q_gps > 0.2 && q_imu < 0.2) %posso prendere solo le misure della imu
         H(1:3,:) = []; %ora ho una H di dimensione 3x9
         R(1:3,:) = [];
         R(:,1:3) = []; % la R è ora di dimensione 3x3
         L = P*H'*inv(S_imu); %9x6
-        X_hat_imu = X_hat + L*innovation_imu; % x_imu(k|k)
-        X_hat = beta0*X_hat + beta_imu*X_hat_imu;
-        P_imu = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9
-        P = beta0*P + beta_imu*(P_imu+(X_hat-X_hat_imu)*(X_hat-X_hat_imu)');
+        X_hat = X_hat + L*innovation_imu; %9x1
+        P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9
     end
-    if (q_gps < 7.8 && q_imu > 7.8)
+    if (q_gps < 0.2 && q_imu > 0.2)
         H(4:6,:) = []; %ora ho una H di dimensione 3x9
         R(4:6,:) = [];
         R(:,4:6) = []; % la R è ora di dimensione 3x3
         L = P*H'*inv(S_gps); %9x6
-        X_hat_gps = X_hat + L*innovation_gps; %x_gps(k|k)
-        X_hat = beta0*X_hat + beta_gps*X_hat_gps;
-        P_gps = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9
-        P = beta0*P + beta_gps*(P_gps+(X_hat-X_hat_gps)*(X_hat-X_hat_gps)');
+        X_hat = X_hat + L*innovation_gps; %9x1
+        P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9
     end
-    if(q_gps > 7.8 && q_imu > 7.8)
-        X_hat = beta0*X_hat; %x(k|k-1)
-        P = beta0*P;
+    if(q_gps > 0.2 && q_imu > 0.2)
+        X_hat = X_hat;
+        P = P;
     end
 
-    if(q_gps < 7.8 && q_imu < 7.8)
+    if(q_gps < 0.2 && q_imu < 0.2)
         L = P*H'*inv(S); %9x6
-        X_hat_gps_imu = X_hat + L*innovation; %x_gps_imu(k|k)
-        X_hat = beta0*X_hat + beta_gps_imu*X_hat_gps_imu;
-        P_gps_imu = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9   
-        P = beta0*P + beta_gps_imu*(P_gps_imu+(X_hat-X_hat_gps_imu)*(X_hat-X_hat_gps_imu)');
+        X_hat = X_hat + L*innovation; %9x1
+        P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9   
     end
-
 end
 
-if (selection_vector(1) == false && selection_vector(2) == true) % ho solo informazioni di accelerazione e non di posizione
+if (selection_vector(1) == false && selection_vector(2) == true ) % ho solo informazioni di accelerazione e non di posizione
     S_imu = R+H*P*H';
     innovation_imu = actual_meas-H*X_hat;
     q_imu = innovation_imu'*inv(S_imu)*innovation_imu;
-    
-    
-    mu_imu = get_mf_valid(q_imu);
-    beta_imu = mu_imu;
-    beta0= 1-mu_imu;
-    
-    if(q_imu < 7.8)
+    if(q_imu < 0.2)
         L = P*H'*inv(S_imu); %9x6
-        X_hat_imu = X_hat + L*innovation_imu; %9x1
-        X_hat = beta0*X_hat + beta_imu*X_hat_imu;
-        P_imu = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9  
-        P = beta0*P + beta_imu*(P_imu+(X_hat-X_hat_imu)*(X_hat-X_hat_imu)');
+        X_hat = X_hat + L*innovation_imu; %9x1
+        P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9  
     end
-    if(q_imu > 7.8)
-        X_hat = beta0*X_hat;
-        P = beta0*P;
+    if(q_imu > 0.2)
+        X_hat = X_hat;
+        P = P;
     end
 end
 
@@ -197,28 +176,21 @@ if (selection_vector(1) == true && selection_vector(2) == false) % ho solo infor
     S_gps = R+H*P*H';
     innovation_gps = actual_meas-H*X_hat;
     q_gps = innovation_gps'*inv(S_gps)*innovation_gps;
-    mu_gps = get_mf_valid(q_gps);
-    beta_gps = mu_gps;
-    beta0= 1-mu_gps;
-    
-    if(q_gps < 7.8)
+    if(q_gps < 0.2)
         L = P*H'*inv(S_gps); %9x6
-        X_hat_gps = X_hat + L*innovation_gps; %9x1
-        X_hat = beta0*X_hat + beta_gps*X_hat_gps;
-        P_gps = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9
-        P = beta0*P + beta_gps*(P_gps+(X_hat-X_hat_gps)*(X_hat-X_hat_gps)');
+        X_hat = X_hat + L*innovation_gps; %9x1
+        P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9  
     end
-    if(q_gps > 7.8)
-        X_hat = beta0*X_hat;
-        P = beta0*P;
+    if(q_gps > 0.2)
+        X_hat = X_hat;
+        P = P;
     end
 end
 
 %if(isempty(innovation) == true)  % if there aren't any measures
 if (selection_vector(1) == false && selection_vector(2) == false )
-        beta0 = 1;
-        X_hat = beta0*X_hat;
-        P = beta0*P;
+        X_hat = X_hat;
+        P = P;
 end
 
 %Compute innovation for imu
@@ -234,3 +206,4 @@ end
 %X_hat = X_hat + L*innovation_gps;
 %P = (eye(9)-L_gps*H_gps)*P*(eye(9)-L_gps*H_gps)'+L_gps*R_gps*L_gps';
 end
+
