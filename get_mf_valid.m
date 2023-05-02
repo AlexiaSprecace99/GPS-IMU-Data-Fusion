@@ -1,8 +1,9 @@
-% get_mf_valid();
+%get_mf_valid(7.8)
 % hold on;
 % get_mf_invalid();
-function [mf_valid] = get_mf_valid()
-% Definizione della soglia di confidenza e della pendenza della rampa
+
+function [mf] = get_mf_valid(q)
+% Definizione della soglia di confidenza e della pendenza della rampaS
 p = 7.8;
 slope = 1/(3.9);
 
@@ -14,7 +15,13 @@ mf_valid = zeros(size(q_vec));
 mf_valid(q_vec <= 0.5*p) = 1;
 mf_valid(q_vec > 0.5*p & q_vec <= p) = 1 - slope*(q_vec(q_vec > 0.5*p & q_vec <= p) - 0.5*p);
 mf_valid(q_vec > p) = 0;
-plot(q_vec,mf_valid);
+%plot(q_vec,mf_valid);
+% Restituzione del valore di mf_valid per il q scelto
+idx = find(abs(q_vec - q) < 1e-8, 1);
+if isempty(idx)
+    [~, idx] = min(abs(q_vec - q));
+end
+mf = mf_valid(idx);
 end
 
 
