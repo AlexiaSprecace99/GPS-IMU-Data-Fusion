@@ -1,4 +1,8 @@
 %In this Script there is an implementation of a Kalman Filter for GPS/IMU data fusion
+%with the introduction of contextual aspect. In particular, a confidence interval was 
+% introduced within which the measures must be found for them to be used in the correction step. 
+% This confidence interval is defined by the 'Chi square' distribution.
+
 %Measure
 pos = log_vars.trajectory_gen;
 vel = log_vars.velocity_gen;
@@ -10,9 +14,9 @@ rand_acc = 0.05*randn(3,1);
 f = matlabFunction(F);
 k = 1;
 log_EKF = [];
-selection_vector = [false false]';  % seleziona quali misure sono state usate all'iterazione corrente
-flag = [0 0]';  % tiene traccia dell'indice delle misure più recenti già utilizzate per ogni sensore
-actual_meas = [0 0 0 0 0 0]';  % contiene i valori delle misure utilizzate all'iterazione corrente
+selection_vector = [false false]';  
+flag = [0 0]'; 
+actual_meas = [0 0 0 0 0 0]';  
 count = 0;
 n= 100;
 log_EKF.x_hat(:,1) = X_hat;
@@ -20,12 +24,7 @@ for t = dt:dt:t_max
     %prediction step
     [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,log_vars,k);
     log_EKF.x_hat(:,k+1) = X_hat;
-    % restituisce ad ogni passo il vettore con le misure dei sensori
-    % effettive e disponibili che non erano già state prese
-                                                       
-   % error_x(1,k) = trajectory_gen(1,k)-log_EKF.x_hat(1,k); 
-    %error_y(1,k) = trajectory_gen(2,k)-log_EKF.x_hat(2,k);
-    %error_z(1,k) = trajectory_gen(3,k)-log_EKF.x_hat(3,k);
+
     
     [actual_meas, selection_vector, flag] = getActualMeas(ts,ta, flag, selection_vector,t);
     % correction step
@@ -75,11 +74,11 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
     end
     count_size_meas = 0;
     if(count == 0)
-      selection_vector(1) = false;    % non c'è nessuna misura disponibile
+      selection_vector(1) = false;    
     else
         count_size_meas = count_size_meas + 1;
-        selection_vector(1) = true;     % la misura è disponibile
-        actual_meas = ta.data(:,flag(1)); %+ 0.01*randn(3,1);    % salvo la misura su meas[]
+        selection_vector(1) = true;     
+        actual_meas = ta.data(:,flag(1)); %+ 0.01*randn(3,1);    
         
     end
 
@@ -91,14 +90,14 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
         flag(2) = flag(2) + 1;
     end
     if(count == 0)
-        selection_vector(2) = false;    % non c'è nessuna misura disponibile
+        selection_vector(2) = false;    
     else
         if(count_size_meas > 0)
-            selection_vector(2) = true;     % la misura è disponibile
-            actual_meas = [actual_meas;ts.data(:,flag(2))]; %+[0.01*randn(3,1);0.05*randn(3,1)];    % salvo la misura su meas[]
+            selection_vector(2) = true;    
+            actual_meas = [actual_meas;ts.data(:,flag(2))]; %+[0.01*randn(3,1);0.05*randn(3,1)];    
         else
-            selection_vector(2) = true;     % la misura è disponibile
-            actual_meas = ts.data(:,flag(2)) ;%+ 0.05*randn(3,1);    % salvo la misura su meas[]  
+            selection_vector(2) = true;    
+            actual_meas = ts.data(:,flag(2)) ;%+ 0.05*randn(3,1);     
         end
     end
 end
@@ -120,68 +119,76 @@ function [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t
         R(:,4-counter:6-counter) = [];
     end
 
-if (selection_vector(1) == true && selection_vector(2) == true) %ci sono entrambe le misure 
+if (selection_vector(1) == true && selection_vector(2) == true) %there are both measures
     S = R+H*P*H';
     S_gps = S(1:3,1:3);
     S_imu = S(4:6,4:6);
     innovation = actual_meas-H*X_hat;
     innovation_gps = innovation(1:3);
     innovation_imu = innovation(4:6);
+    
+    %Calculation of the values(q_gps,q_imu) to see if they are within the chosen confidence interval, 
+    %constructed using Chi square distribution. In this case, the limit value chosen is 7.8, 
+    %found with a 3-degree-of-freedom distribution and a 95% confidence interval 
+    %If the measurements are below this limit then they are used for correction 
+    %since they are considered more reliable
+
     q_gps = innovation_gps'*inv(S_gps)*innovation_gps;
     q_imu = innovation_imu'*inv(S_imu)*innovation_imu;
-    if(q_gps > 0.2 && q_imu < 0.2) %posso prendere solo le misure della imu
-        H(1:3,:) = []; %ora ho una H di dimensione 3x9
+
+    if(q_gps > 0.2 && q_imu < 0.2) %takes only Imu measures
+        H(1:3,:) = []; %3x9
         R(1:3,:) = [];
-        R(:,1:3) = []; % la R è ora di dimensione 3x3
+        R(:,1:3) = []; %3x3
         L = P*H'*inv(S_imu); %9x6
         X_hat = X_hat + L*innovation_imu; %9x1
         P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9
     end
-    if (q_gps < 0.2 && q_imu > 0.2)
-        H(4:6,:) = []; %ora ho una H di dimensione 3x9
+    if (q_gps < 0.2 && q_imu > 0.2) %takes only Gps measures
+        H(4:6,:) = []; %3x9
         R(4:6,:) = [];
-        R(:,4:6) = []; % la R è ora di dimensione 3x3
+        R(:,4:6) = []; %3x3
         L = P*H'*inv(S_gps); %9x6
         X_hat = X_hat + L*innovation_gps; %9x1
         P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9
     end
-    if(q_gps > 0.2 && q_imu > 0.2)
+    if(q_gps > 0.2 && q_imu > 0.2) %takes nothing
         X_hat = X_hat;
         P = P;
     end
 
-    if(q_gps < 0.2 && q_imu < 0.2)
+    if(q_gps < 0.2 && q_imu < 0.2) %takes both measures
         L = P*H'*inv(S); %9x6
         X_hat = X_hat + L*innovation; %9x1
         P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9   
     end
 end
 
-if (selection_vector(1) == false && selection_vector(2) == true ) % ho solo informazioni di accelerazione e non di posizione
+if (selection_vector(1) == false && selection_vector(2) == true ) % just Imu measures
     S_imu = R+H*P*H';
     innovation_imu = actual_meas-H*X_hat;
     q_imu = innovation_imu'*inv(S_imu)*innovation_imu;
-    if(q_imu < 0.2)
+    if(q_imu < 0.2) %takes measure
         L = P*H'*inv(S_imu); %9x6
         X_hat = X_hat + L*innovation_imu; %9x1
         P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9  
     end
-    if(q_imu > 0.2)
+    if(q_imu > 0.2) %doesn't take measure
         X_hat = X_hat;
         P = P;
     end
 end
 
-if (selection_vector(1) == true && selection_vector(2) == false) % ho solo informazioni di posizione e non di accelerazione
+if (selection_vector(1) == true && selection_vector(2) == false) %just Gps measure
     S_gps = R+H*P*H';
     innovation_gps = actual_meas-H*X_hat;
     q_gps = innovation_gps'*inv(S_gps)*innovation_gps;
-    if(q_gps < 0.2)
+    if(q_gps < 0.2) %takes measure
         L = P*H'*inv(S_gps); %9x6
         X_hat = X_hat + L*innovation_gps; %9x1
         P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9  
     end
-    if(q_gps > 0.2)
+    if(q_gps > 0.2) %doesn't takes measure
         X_hat = X_hat;
         P = P;
     end

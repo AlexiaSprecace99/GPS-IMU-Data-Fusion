@@ -31,7 +31,7 @@ X_hat = X_start + (std_dev_init)*randn(size(X_start,1),1);
 P = diag(std_dev_init)^2; 
 
 %Dynamic Matrix
-dt = 1/100; %Sample Time of the filter
+dt = 1/75; %Sample Time of the filter
 F = [eye(3) T*eye(3) (T^2)*eye(3)/2; zeros(3) eye(3) T*eye(3); zeros(3) zeros(3) eye(3)];
 
 %Sensor Parameter
@@ -41,8 +41,8 @@ dt_gps = 0.2; %Sampling Time for the Gps sensor
 dt_imu = 1/75; %Sampling Time for the IMU
 std_dev_gps = 0.01; %Standard Deviation for the GPS
 std_dev_imu = 0.05; %Standard Deviation for the IMU
-R_gps = blkdiag(std_dev_gps,std_dev_gps,std_dev_gps)^2;
-R_imu = blkdiag(std_dev_imu,std_dev_imu,std_dev_imu)^2;
+R_gps = blkdiag(std_dev_gps,std_dev_gps,std_dev_gps)^2; %Gps variance matrix 
+R_imu = blkdiag(std_dev_imu,std_dev_imu,std_dev_imu)^2; %Imu variance matrix
 
 %Covariance Matrix of the process noise
 Q = eye(9);
@@ -53,7 +53,7 @@ H_gps = [eye(3) zeros(3) zeros(3)];
 %Measure matrix for IMU
 H_imu = [zeros(3) zeros(3) eye(3)];
 
-%Simulation
+%Simulation time
 t_max = 50;
 
 %Measure matrix 

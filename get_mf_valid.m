@@ -1,22 +1,21 @@
-%get_mf_valid(7.8)
-% hold on;
-% get_mf_invalid();
+%This matlab script is for finding membership functions to use for fuzzy logic
 
 function [mf] = get_mf_valid(q)
-% Definizione della soglia di confidenza e della pendenza della rampaS
+% Definition of the confidence threshold and slope of the rampS
 p = 7.8;
 slope = 1/(3.9);
 
-% Definizione del vettore di q da valutare
+% Definition of the vector of q to be evaluated
 q_vec = 0:0.01:p*1.2;
 
-% Definizione della membership function
+% Definition of membership function
 mf_valid = zeros(size(q_vec));
 mf_valid(q_vec <= 0.5*p) = 1;
 mf_valid(q_vec > 0.5*p & q_vec <= p) = 1 - slope*(q_vec(q_vec > 0.5*p & q_vec <= p) - 0.5*p);
 mf_valid(q_vec > p) = 0;
 %plot(q_vec,mf_valid);
-% Restituzione del valore di mf_valid per il q scelto
+
+% Value return of mf_valid for the q choosen
 idx = find(abs(q_vec - q) < 1e-8, 1);
 if isempty(idx)
     [~, idx] = min(abs(q_vec - q));

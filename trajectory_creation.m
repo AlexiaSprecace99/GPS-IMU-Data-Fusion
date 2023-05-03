@@ -1,3 +1,5 @@
+%In this script is created the simulated trajectory to use in Kalman filter
+
 clc
 initialization
 %% Reference Generation
@@ -83,6 +85,5 @@ j = j+1;
 end
 t_gps = 0:dt_gps:te;
 ta = timeseries(pos_gps,t_gps);
-%Initialization of Matlab Function
 
 grid on

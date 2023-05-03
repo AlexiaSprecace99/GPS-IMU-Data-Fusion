@@ -1,4 +1,8 @@
 %In this Script there is an implementation of a Kalman Filter for GPS/IMU data fusion
+%with the introduction of contextual aspect. In particular, in particular, after introducing 
+% the confidence interval using the chi-square distribution, 
+% fuzzy logic was added to try to reject unreliable measures   
+
 %Measure
 pos = log_vars.trajectory_gen;
 vel = log_vars.velocity_gen;
@@ -10,9 +14,9 @@ rand_acc = 0.05*randn(3,1);
 f = matlabFunction(F);
 k = 1;
 log_EKF = [];
-selection_vector = [false false]';  % seleziona quali misure sono state usate all'iterazione corrente
-flag = [0 0]';  % tiene traccia dell'indice delle misure più recenti già utilizzate per ogni sensore
-actual_meas = [0 0 0 0 0 0]';  % contiene i valori delle misure utilizzate all'iterazione corrente
+selection_vector = [false false]';  
+flag = [0 0]'; 
+actual_meas = [0 0 0 0 0 0]'; 
 count = 0;
 n= 100;
 log_EKF.x_hat(:,1) = X_hat;
@@ -20,12 +24,7 @@ for t = dt:dt:t_max
     %prediction step
     [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,log_vars,k);
     log_EKF.x_hat(:,k+1) = X_hat;
-    % restituisce ad ogni passo il vettore con le misure dei sensori
-    % effettive e disponibili che non erano già state prese
-                                                       
-   % error_x(1,k) = trajectory_gen(1,k)-log_EKF.x_hat(1,k); 
-    %error_y(1,k) = trajectory_gen(2,k)-log_EKF.x_hat(2,k);
-    %error_z(1,k) = trajectory_gen(3,k)-log_EKF.x_hat(3,k);
+   
     
     [actual_meas, selection_vector, flag] = getActualMeas(ts,ta, flag, selection_vector,t);
     % correction step
@@ -75,11 +74,11 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
     end
     count_size_meas = 0;
     if(count == 0)
-      selection_vector(1) = false;    % non c'è nessuna misura disponibile
+      selection_vector(1) = false;  
     else
         count_size_meas = count_size_meas + 1;
-        selection_vector(1) = true;     % la misura è disponibile
-        actual_meas = ta.data(:,flag(1))+ 0.1*randn(3,1);    % salvo la misura su meas[]
+        selection_vector(1) = true;    
+        actual_meas = ta.data(:,flag(1))+ 0.1*randn(3,1); 
         
     end
 
@@ -91,14 +90,14 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
         flag(2) = flag(2) + 1;
     end
     if(count == 0)
-        selection_vector(2) = false;    % non c'è nessuna misura disponibile
+        selection_vector(2) = false;  
     else
         if(count_size_meas > 0)
-            selection_vector(2) = true;     % la misura è disponibile
-            actual_meas = [actual_meas;ts.data(:,flag(2))]+[0.1*randn(3,1);0.1*randn(3,1)];    % salvo la misura su meas[]
+            selection_vector(2) = true;  
+            actual_meas = [actual_meas;ts.data(:,flag(2))]+[0.1*randn(3,1);0.1*randn(3,1)];  
         else
-            selection_vector(2) = true;     % la misura è disponibile
-            actual_meas = ts.data(:,flag(2)) + 0.1*randn(3,1);    % salvo la misura su meas[]  
+            selection_vector(2) = true;    
+            actual_meas = ts.data(:,flag(2)) + 0.1*randn(3,1);    
         end
     end
 end
@@ -107,19 +106,19 @@ end
 
 function [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t,k)
     counter = 0;
-    if selection_vector(1) == false  %if there aren't any information of position
+    if selection_vector(1) == false 
         H(1:3,:) = [];
         R(1:3,:) = [];
         R(:,1:3) = [];
         counter = counter+3;
     end
-    if selection_vector(2) == false  %if there aren't any information of acceleration
+    if selection_vector(2) == false  
         H(4-counter:6-counter,:) = [];
         R(4-counter:6-counter,:) = [];
         R(:,4-counter:6-counter) = [];
     end
 
-if (selection_vector(1) == true && selection_vector(2) == true) %ci sono entrambe le misure 
+if (selection_vector(1) == true && selection_vector(2) == true) 
     S = R+H*P*H';
     S_gps = S(1:3,1:3);
     S_imu = S(4:6,4:6);
@@ -128,39 +127,45 @@ if (selection_vector(1) == true && selection_vector(2) == true) %ci sono entramb
     innovation_imu = innovation(4:6);
     q_gps = innovation_gps'*inv(S_gps)*innovation_gps;
     q_imu = innovation_imu'*inv(S_imu)*innovation_imu;
+
+    %Evaluation of membership functions of fuzzy logic
+
     mu_gps = get_mf_valid(q_gps);
     mu_imu = get_mf_valid(q_imu);
     mu_gps_imu = mu_gps*mu_imu;
+
+    %Evaluation of probabilities of exclusive validity
+
     beta_gps = mu_gps-mu_gps_imu;
     beta_imu = mu_imu-mu_gps_imu;
     beta_gps_imu = mu_gps_imu;
     beta0= 1-mu_gps-mu_imu+mu_gps_imu;
-    if(q_gps > 7.8 && q_imu < 7.8) %posso prendere solo le misure della imu
-        H(1:3,:) = []; %ora ho una H di dimensione 3x9
+    if(q_gps > 7.8 && q_imu < 7.8) %only Imu measure
+        H(1:3,:) = []; %3x9
         R(1:3,:) = [];
-        R(:,1:3) = []; % la R è ora di dimensione 3x3
+        R(:,1:3) = []; %3x3
         L = P*H'*inv(S_imu); %9x6
         X_hat_imu = X_hat + L*innovation_imu; % x_imu(k|k)
         X_hat = beta0*X_hat + beta_imu*X_hat_imu;
         P_imu = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9
         P = beta0*P + beta_imu*(P_imu+(X_hat-X_hat_imu)*(X_hat-X_hat_imu)');
     end
-    if (q_gps < 7.8 && q_imu > 7.8)
-        H(4:6,:) = []; %ora ho una H di dimensione 3x9
+    if (q_gps < 7.8 && q_imu > 7.8) %only Gps measure
+        H(4:6,:) = []; %3x9
         R(4:6,:) = [];
-        R(:,4:6) = []; % la R è ora di dimensione 3x3
+        R(:,4:6) = []; %3x3
         L = P*H'*inv(S_gps); %9x6
-        X_hat_gps = X_hat + L*innovation_gps; %x_gps(k|k)
+        X_hat_gps = X_hat + L*innovation_gps; % x_gps(k|k)
         X_hat = beta0*X_hat + beta_gps*X_hat_gps;
         P_gps = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9
         P = beta0*P + beta_gps*(P_gps+(X_hat-X_hat_gps)*(X_hat-X_hat_gps)');
     end
-    if(q_gps > 7.8 && q_imu > 7.8)
+    if(q_gps > 7.8 && q_imu > 7.8) %no measure meets the constraint
         X_hat = beta0*X_hat; %x(k|k-1)
         P = beta0*P;
     end
 
-    if(q_gps < 7.8 && q_imu < 7.8)
+    if(q_gps < 7.8 && q_imu < 7.8) %both measure meets the constrains
         L = P*H'*inv(S); %9x6
         X_hat_gps_imu = X_hat + L*innovation; %x_gps_imu(k|k)
         X_hat = beta0*X_hat + beta_gps_imu*X_hat_gps_imu;
@@ -170,7 +175,7 @@ if (selection_vector(1) == true && selection_vector(2) == true) %ci sono entramb
 
 end
 
-if (selection_vector(1) == false && selection_vector(2) == true) % ho solo informazioni di accelerazione e non di posizione
+if (selection_vector(1) == false && selection_vector(2) == true) %just acceleration information
     S_imu = R+H*P*H';
     innovation_imu = actual_meas-H*X_hat;
     q_imu = innovation_imu'*inv(S_imu)*innovation_imu;
@@ -182,7 +187,7 @@ if (selection_vector(1) == false && selection_vector(2) == true) % ho solo infor
     
     if(q_imu < 7.8)
         L = P*H'*inv(S_imu); %9x6
-        X_hat_imu = X_hat + L*innovation_imu; %9x1
+        X_hat_imu = X_hat + L*innovation_imu; %x_imu(k|k)
         X_hat = beta0*X_hat + beta_imu*X_hat_imu;
         P_imu = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9  
         P = beta0*P + beta_imu*(P_imu+(X_hat-X_hat_imu)*(X_hat-X_hat_imu)');
@@ -193,7 +198,7 @@ if (selection_vector(1) == false && selection_vector(2) == true) % ho solo infor
     end
 end
 
-if (selection_vector(1) == true && selection_vector(2) == false) % ho solo informazioni di posizione e non di accelerazione
+if (selection_vector(1) == true && selection_vector(2) == false) %just position information
     S_gps = R+H*P*H';
     innovation_gps = actual_meas-H*X_hat;
     q_gps = innovation_gps'*inv(S_gps)*innovation_gps;
@@ -203,7 +208,7 @@ if (selection_vector(1) == true && selection_vector(2) == false) % ho solo infor
     
     if(q_gps < 7.8)
         L = P*H'*inv(S_gps); %9x6
-        X_hat_gps = X_hat + L*innovation_gps; %9x1
+        X_hat_gps = X_hat + L*innovation_gps; %x_gps(k|k)
         X_hat = beta0*X_hat + beta_gps*X_hat_gps;
         P_gps = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9
         P = beta0*P + beta_gps*(P_gps+(X_hat-X_hat_gps)*(X_hat-X_hat_gps)');
@@ -214,8 +219,7 @@ if (selection_vector(1) == true && selection_vector(2) == false) % ho solo infor
     end
 end
 
-%if(isempty(innovation) == true)  % if there aren't any measures
-if (selection_vector(1) == false && selection_vector(2) == false )
+if (selection_vector(1) == false && selection_vector(2) == false ) %no measure available
         beta0 = 1;
         X_hat = beta0*X_hat;
         P = beta0*P;
