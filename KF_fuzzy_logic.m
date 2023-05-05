@@ -4,11 +4,11 @@
 % fuzzy logic was added to try to reject unreliable measures   
 
 %Measure
-pos = log_vars.trajectory_gen;
-vel = log_vars.velocity_gen;
-acc = log_vars.acceleration_gen;
-meas = [pos;acc];
-rand_acc = 0.05*randn(3,1);
+% pos = log_vars.trajectory_gen;
+% vel = log_vars.velocity_gen;
+% acc = log_vars.acceleration_gen;
+% meas = [pos;acc];
+% rand_acc = 0.05*randn(3,1);
 
 %Initialization of Matlab Function
 f = matlabFunction(F);
@@ -22,43 +22,74 @@ n= 100;
 log_EKF.x_hat(:,1) = X_hat;
 for t = dt:dt:t_max
     %prediction step
-    [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,log_vars,k);
-    log_EKF.x_hat(:,k+1) = X_hat;
+    [X_hat(:,k+1), P] = prediction_KF(X_hat(:,k), P, Q, dt,f,k,acceleration);
+    %log_EKF.x_hat(:,k+1) = X_hat;
    
     
     [actual_meas, selection_vector, flag] = getActualMeas(ts,ta, flag, selection_vector,t);
     % correction step
-    [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t,k);
+    [X_hat(:,k+1), P] = correction_KF(X_hat(:,k+1), P, actual_meas,selection_vector,H,R,t,k);
 
-
-    error_x(1,k) = trajectory_gen(1,k)-log_EKF.x_hat(1,k);
-    error_y(1,k) = trajectory_gen(2,k)-log_EKF.x_hat(2,k);
-    error_z(1,k) = trajectory_gen(3,k)-log_EKF.x_hat(3,k);
-
-    error_ax(1,k) = acceleration_gen(1,k)-log_EKF.x_hat(7,k);
-    error_ay(1,k) = acceleration_gen(2,k)-log_EKF.x_hat(8,k);
-    error_az(1,k) = acceleration_gen(3,k)-log_EKF.x_hat(9,k);
+%     graf_x(k) = position(1,k);
+%     graf_y(k) = position(2,k);
+%     graf_z(k) = position(3,k);
+% 
+%     graf_ax(k) = acceleration(1,k);
+%     graf_ay(k) = acceleration(2,k);
+%     graf_az(k) = acceleration(3,k);
+% 
+%     error_x(1,k) = position(1,k)-log_EKF.x_hat(1,k);
+%     error_y(1,k) = position(2,k)-log_EKF.x_hat(2,k);
+%     error_z(1,k) = position(3,k)-log_EKF.x_hat(3,k);
+% 
+%     error_ax(1,k) = acceleration(1,k)-log_EKF.x_hat(7,k);
+%     error_ay(1,k) = acceleration(2,k)-log_EKF.x_hat(8,k);
+%     error_az(1,k) = acceleration(3,k)-log_EKF.x_hat(9,k);
 
 
     k = k + 1;
 end
-plot3(trajectory_gen(1,:),trajectory_gen(2,:),trajectory_gen(3,:)); hold on;
-plot3(log_EKF.x_hat(1,:),log_EKF.x_hat(2,:),log_EKF.x_hat(3,:));
-legend
+[x_estimation]=[X_hat(1,:)]';
+[y_estimation]=[X_hat(2,:)]';
+[z_estimation] = [X_hat(3,:)]';
+ grid on;
+ figure(1);
+plot(position_complete(3,:),'r'); hold on;
+plot(z_estimation,'b');
+% 
+% grid on;
+% figure(2);
+% plot(position(2,:),'r'); hold on;
+% plot(log_EKF.x_hat(2,:),'b');
+% 
+% grid on;
+% figure(3);
+% plot(position(3,:),'r'); hold on;
+% plot(log_EKF.x_hat(3,:),'b');
 
-figure(2); grid on; 
-plot(error_x);
+% grid on;
+% figure(2);
+% plot3(log_EKF.x_hat(1,:),log_EKF.x_hat(2,:),log_EKF.x_hat(3,:));
 
-figure(3); grid on; 
-plot(error_y);
+% grid on;
+% figure(1); 
+% plot(graf_ax);
+% %plot(error_ax);
+% 
+% grid on;
+% figure(2);
+% plot(graf_ay);
+% %plot(error_ay);
+% 
+% grid on;
+% figure(3);
+% plot(graf_az);
+% %plot(error_az);
 
-figure(4); grid on; 
-plot(error_z);
 
-
-function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,log_vars,k)
+function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,acceleration)
 F = feval(f,dt);
-X_hat(7:9,1) = log_vars.acceleration_gen(:,k);
+X_hat(7:9,1) = acceleration(:,k);
 X_hat = F*X_hat;
 P = F*P*F'+Q;
 end
@@ -78,7 +109,7 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
     else
         count_size_meas = count_size_meas + 1;
         selection_vector(1) = true;    
-        actual_meas = ta.data(:,flag(1))+ 0.1*randn(3,1); 
+        actual_meas = ta.data(:,flag(1)); 
         
     end
 
@@ -94,10 +125,10 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
     else
         if(count_size_meas > 0)
             selection_vector(2) = true;  
-            actual_meas = [actual_meas;ts.data(:,flag(2))]+[0.1*randn(3,1);0.1*randn(3,1)];  
+            actual_meas = [actual_meas;ts.data(:,flag(2))];  
         else
             selection_vector(2) = true;    
-            actual_meas = ts.data(:,flag(2)) + 0.1*randn(3,1);    
+            actual_meas = ts.data(:,flag(2));    
         end
     end
 end

@@ -2,10 +2,10 @@
 %in the standard form prediction/correction without the addition of contextual aspect
 
 %Measure
-pos = log_vars.trajectory_gen;
-vel = log_vars.velocity_gen;
-acc = log_vars.acceleration_gen;
-meas = [pos;vel;acc];
+% pos = log_vars.trajectory_gen;
+% vel = log_vars.velocity_gen;
+% acc = log_vars.acceleration_gen;
+% meas = [pos;vel;acc];
 rand_pos = 0.01*randn(3,1);
 rand_acc = 0.05*randn(3,1);
 
@@ -23,7 +23,7 @@ actual_meas = [0 0 0 0 0 0]';   %contains measures at current time
 log_EKF.x_hat(:,1) = X_hat;
 for t = dt:dt:t_max
     %prediction step
-    [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,log_vars,k);
+    [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,acceleration);
     log_EKF.x_hat(:,k+1) = X_hat;
 
     %[actual_meas, selection_vector, flag] = getActualMeas(x,y,z,vx,vy,vz,ax,ay,az,flag,selection_vector, k, dt);
@@ -31,21 +31,22 @@ for t = dt:dt:t_max
  %getActualMeas returns sensor measures at each step. If the measure has already been used for correction, it is not taken
  %If the measurement does not arrive, then it is not corrected with that sensor.
     
-    [actual_meas, selection_vector, flag] = getActualMeas(ts,ta, flag, selection_vector, t,rand_pos,rand_acc);
+    [actual_meas, selection_vector, flag] = getActualMeas(ts,ta, flag, selection_vector, t);
     
     % correction step
     [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t);
 
 
-    error_x(1,k) = trajectory_gen(1,k)-log_EKF.x_hat(1,k);
-    error_y(1,k) = trajectory_gen(2,k)-log_EKF.x_hat(2,k);
-    error_z(1,k) = trajectory_gen(3,k)-log_EKF.x_hat(3,k);
+    error_x(1,k) = position(1,k)-log_EKF.x_hat(1,k);
+    error_y(1,k) = position(2,k)-log_EKF.x_hat(2,k);
+    error_z(1,k) = position(3,k)-log_EKF.x_hat(3,k);
 
     k = k + 1;
 end
+grid on;
 figure(1);
-plot3(trajectory_gen(1,:),trajectory_gen(2,:),trajectory_gen(3,:),'r');
-hold on; grid on;
+%plot3(position(1,:),position(2,:),position(3,:),'r');
+%hold on; grid on;
 plot3(log_EKF.x_hat(1,:),log_EKF.x_hat(2,:),log_EKF.x_hat(3,:),'b');
 
 figure(2); grid on; 
@@ -58,14 +59,14 @@ figure(4); grid on;
 plot(error_z);
 
 %Prediction step: it been used acceleration measures from IMU
-function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,log_vars,k)
+function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,acceleration)
 F = feval(f,dt); %F matrix depends on the sampling time
-X_hat(7:9,1) = log_vars.acceleration_gen(:,k); 
+X_hat(7:9,1) = acceleration(:,k); 
 X_hat = F*X_hat;
 P = F*P*F'+Q;
 end
 
-function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selection_vector,t,rand_pos,rand_acc)
+function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selection_vector,t)
     count = 0;
     actual_meas = [];
     count_size_meas = 0;
@@ -80,7 +81,7 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
     else
         count_size_meas = count_size_meas + 1;
         selection_vector(1) = true;     % available measure
-        actual_meas = ta.data(:,flag(1))+rand_pos;    % measure saving in actual_meas
+        actual_meas = ta.data(:,flag(1));    % measure saving in actual_meas
         
     end
 
@@ -96,10 +97,10 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
     else
         if(count_size_meas > 0)
             selection_vector(2) = true;    % available measure
-            actual_meas = [actual_meas;ts.data(:,flag(2))]+[rand_pos;rand_acc];    % % measure saving in actual_meas
+            actual_meas = [actual_meas;ts.data(:,flag(2))];    % % measure saving in actual_meas
         else
             selection_vector(2) = true;    % available measure
-            actual_meas = ts.data(:,flag(2))+rand_acc;   % measure saving in actual_meas 
+            actual_meas = ts.data(:,flag(2));   % measure saving in actual_meas 
         end
     end
 end
