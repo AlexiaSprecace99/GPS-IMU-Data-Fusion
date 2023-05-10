@@ -52,7 +52,7 @@ for t = dt:dt:t_max
 
     k = k + 1;
 end
-
+save('KF_struct', 'log_KF');
 % 
 % grid on;
 % figure(2);

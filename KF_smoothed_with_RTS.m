@@ -69,7 +69,17 @@ plot(Tc,position_complete(3,:),'k'); hold on; grid on;
 plot(Tc,z_estimation,'m'); hold on;
 legend('gps z','estim z');
 
+figure(4)
+plot(Tc,position_complete(1,:)-x_estimation); grid on;
+legend('position error x');
 
+figure(5)
+plot(Tc,position_complete(2,:)-y_estimation); grid on;
+legend('position error y');
+
+figure(6)
+plot(Tc,position_complete(3,:)-z_estimation); grid on;
+legend('position error z');
 % xlim([min(x_hat_smooth_x) max(x_hat_smooth_x)])
 % ylim([min(x_hat_smooth_y) max(x_hat_smooth_y)])
 % 
