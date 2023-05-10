@@ -8,6 +8,7 @@
 % meas = [pos;vel;acc];
 rand_pos = 0.01*randn(3,1);
 rand_acc = 0.05*randn(3,1);
+Tc = 0:0.02:t_max-0.02;
 
 %Initialization of Matlab Function
 f = matlabFunction(F);
@@ -20,11 +21,11 @@ selection_vector = [false false]';  % measurement selection at current iteration
 flag = [0 0]';  % keeps track of the index of the most recent measurements already used for each sensor
 actual_meas = [0 0 0 0 0 0]';   %contains measures at current time
 
-%log_EKF.x_hat(:,1) = X_hat;
-for t = dt:dt:t_max
+log_EKF.x_hat(:,1) = X_hat;
+for t = dt:dt:t_max-0.02
     %prediction step
-    [X_hat(:,k+1), P] = prediction_KF(X_hat(:,k), P, Q, dt,f,k,acceleration);
-    %log_EKF.x_hat(:,k+1) = X_hat;
+    [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,acceleration);
+    log_EKF.x_hat(:,k+1) = X_hat;
 
     %[actual_meas, selection_vector, flag] = getActualMeas(x,y,z,vx,vy,vz,ax,ay,az,flag,selection_vector, k, dt);
                                                        
@@ -34,7 +35,8 @@ for t = dt:dt:t_max
     [actual_meas, selection_vector, flag] = getActualMeas(ts,ta, flag, selection_vector, t);
     
     % correction step
-    [X_hat(:,k+1), P] = correction_KF(X_hat(:,k+1), P, actual_meas,selection_vector,H,R,t,k);
+    [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t);
+
 
 %     error_x(1,k) = position(1,k)-log_EKF.x_hat(1,k);
 %     error_y(1,k) = position(2,k)-log_EKF.x_hat(2,k);
@@ -42,18 +44,24 @@ for t = dt:dt:t_max
 
     k = k + 1;
 end
+[x_estimation]=[log_EKF.x_hat(1,:)];
+[y_estimation]=[log_EKF.x_hat(2,:)];
+[z_estimation] = [log_EKF.x_hat(3,:)];
 grid on;
 figure(1);
-%plot3(position(1,:),position(2,:),position(3,:),'r');
-%hold on; grid on;
-%plot3(log_EKF.x_hat(1,:),log_EKF.x_hat(2,:),log_EKF.x_hat(3,:),'b');
-[x_estimation]=[X_hat(1,:)]';
-[y_estimation]=[X_hat(2,:)]';
-[z_estimation] = [X_hat(3,:)]';
-grid on;
-figure(1);
-plot(position_complete(3,:),'r'); hold on;
-plot(z_estimation,'b');
+plot(Tc,position_complete(1,:),'r');hold on; grid on;
+plot(Tc,x_estimation,'b'); 
+legend('gps x','estim x');
+
+figure(2);
+plot(Tc,position_complete(2,:),'g'); hold on; grid on;
+plot(Tc,y_estimation,'y');
+legend('gps y','estim y');
+
+figure(3);
+plot(Tc,position_complete(3,:),'k'); hold on; grid on;
+plot(Tc,z_estimation,'m'); hold on;
+legend('gps z','estim z');
 
 %Prediction step: it been used acceleration measures from IMU
 function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,acceleration)
@@ -104,7 +112,7 @@ end
 
 %Correction step: after seen which measures are available 
 
-function [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t,k)
+function [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t)
     counter = 0;
     if selection_vector(1) == false  %if there aren't any information of position
         H(1:3,:) = [];
