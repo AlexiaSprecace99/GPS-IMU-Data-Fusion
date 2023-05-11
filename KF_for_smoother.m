@@ -8,7 +8,7 @@
 % meas = [pos;vel;acc];
 rand_pos = 0.01*randn(3,1);
 rand_acc = 0.05*randn(3,1);
-Tc = 0:0.02:t_max-0.02;
+Tc = 0:0.02:t_max;
 
 
 %Initialization of Matlab Function
@@ -23,7 +23,7 @@ flag = [0 0]';  % keeps track of the index of the most recent measurements alrea
 actual_meas = [0 0 0 0 0 0]';   %contains measures at current time
 
 log_KF(1).x_hat_pred = X_hat;
-for t = dt:dt:t_max
+for t = 0:dt:t_max
     %prediction step
     [X_hat, P, F] = prediction_KF(X_hat, P, Q, dt,f,k,acceleration);
     log_KF(k).x_hat_pred= X_hat;
@@ -95,7 +95,9 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
         count_size_meas = count_size_meas + 1;
         selection_vector(1) = true;     % available measure
         actual_meas = ta.data(:,flag(1));    % measure saving in actual_meas
-        
+        if t == 5 || t == 10 || t == 15 || t == 20 || t == 25 || t == 100 || t == 110 || t == 115 
+            actual_meas = actual_meas+30*rand(size(actual_meas));
+        end
     end
 
 

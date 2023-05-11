@@ -9,7 +9,7 @@
 % acc = log_vars.acceleration_gen;
 % meas = [pos;acc];
 % rand_acc = 0.05*randn(3,1);
-Tc = 0:0.02:t_max-0.02;
+Tc = 0:0.02:t_max;
 %Initialization of Matlab Function
 f = matlabFunction(F);
 k = 1;
@@ -20,7 +20,7 @@ actual_meas = [0 0 0 0 0 0]';
 count = 0;
 n= 100;
 log_KF(1).x_hat_pred = X_hat;
-for t = dt:dt:t_max
+for t = 0:dt:t_max
     %prediction step
     [X_hat, P, F] = prediction_KF(X_hat, P, Q, dt,f,k,acceleration);
     log_KF(k).x_hat_pred= X_hat;
@@ -107,7 +107,9 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
         count_size_meas = count_size_meas + 1;
         selection_vector(1) = true;    
         actual_meas = ta.data(:,flag(1)); 
-        
+        if t == 5 || t == 10 || t == 15 || t == 20 || t == 25 || t == 100 || t == 110 || t == 115 
+            actual_meas = actual_meas+30*rand(size(actual_meas));
+        end
     end
 
 
@@ -168,7 +170,7 @@ if (selection_vector(1) == true && selection_vector(2) == true)
     beta_imu = mu_imu-mu_gps_imu;
     beta_gps_imu = mu_gps_imu;
     beta0= 1-mu_gps-mu_imu+mu_gps_imu;
-    if(q_gps > 9.5 && q_imu < 9.5) %only Imu measure
+    if(q_gps > 7.8 && q_imu < 7.8) %only Imu measure
         H(1:3,:) = []; %3x9
         R(1:3,:) = [];
         R(:,1:3) = []; %3x3
@@ -178,7 +180,7 @@ if (selection_vector(1) == true && selection_vector(2) == true)
         P_imu = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9
         P = beta0*P + beta_imu*(P_imu+(X_hat-X_hat_imu)*(X_hat-X_hat_imu)');
     end
-    if (q_gps < 9.5 && q_imu > 9.5) %only Gps measure
+    if (q_gps < 7.8 && q_imu > 7.8) %only Gps measure
         H(4:6,:) = []; %3x9
         R(4:6,:) = [];
         R(:,4:6) = []; %3x3
@@ -213,14 +215,14 @@ if (selection_vector(1) == false && selection_vector(2) == true) %just accelerat
     beta_imu = mu_imu;
     beta0= 1-mu_imu;
     
-    if(q_imu < 9.5)
+    if(q_imu < 7.8)
         L = P*H'*inv(S_imu); %9x6
         X_hat_imu = X_hat + L*innovation_imu; %x_imu(k|k)
         X_hat = beta0*X_hat + beta_imu*X_hat_imu;
         P_imu = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9  
         P = beta0*P + beta_imu*(P_imu+(X_hat-X_hat_imu)*(X_hat-X_hat_imu)');
     end
-    if(q_imu > 9.5)
+    if(q_imu > 7.8)
         X_hat = beta0*X_hat;
         P = beta0*P;
     end
@@ -234,14 +236,14 @@ if (selection_vector(1) == true && selection_vector(2) == false) %just position 
     beta_gps = mu_gps;
     beta0= 1-mu_gps;
     
-    if(q_gps < 9)
+    if(q_gps < 7.8)
         L = P*H'*inv(S_gps); %9x6
         X_hat_gps = X_hat + L*innovation_gps; %x_gps(k|k)
         X_hat = beta0*X_hat + beta_gps*X_hat_gps;
         P_gps = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9
         P = beta0*P + beta_gps*(P_gps+(X_hat-X_hat_gps)*(X_hat-X_hat_gps)');
     end
-    if(q_gps > 9)
+    if(q_gps > 7.8)
         X_hat = beta0*X_hat;
         P = beta0*P;
     end

@@ -10,19 +10,19 @@ syms T
 %e for East and d for Down
 
 %Initial Condition for the Filter State Vector
-Pn_0 = -1.5316;
-Pe_0 = -0.1235;
-Pd_0 = 0.3156;
-Vn_0 = 0;
-Ve_0 = 0;
-Vd_0 = 0;
-An_0 = -0.0377;
-Ae_0 = -0.506;
-Ad_0 = 0.0451;
+Pn_0 = -0.8041;
+Pe_0 = -0.3792;
+Pd_0 = -1.9436;
+Vn_0 = 0.1363;
+Ve_0 = -0.1217;
+Vd_0 = 0.0568;
+An_0 = -0.0461;
+Ae_0 = -0.0461;
+Ad_0 = 0.0568;
 X_start = [Pn_0 Pe_0 Pd_0 Vn_0 Ve_0 Vd_0 An_0 Ae_0 Ad_0]';
 
 %Standard Deviation on the Initial State 
-std_dev_init = [10 10 10 1 1 1 0.1 0.1 0.1];
+std_dev_init = [0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01];
 
 %Initial Estimate
 X_hat = X_start + (std_dev_init)*randn(size(X_start,1),1);
@@ -54,7 +54,7 @@ H_gps = [eye(3) zeros(3) zeros(3)];
 H_imu = [zeros(3) zeros(3) eye(3)];
 
 %Simulation time
-t_max = 502.64;
+t_max = 245.64;
 
 %Measure matrix 
 H = [eye(3) zeros(3) zeros(3);zeros(3) zeros(3) eye(3)];
@@ -65,85 +65,18 @@ R = blkdiag(R_gps,R_imu);
 load('LOG00054_parsed_seg3.mat');
 load('tgps.mat');
 
-acceleration(1,:) = DATA(8967:34098,31);
-acceleration(2,:) = DATA(8967:34098,34);
-acceleration(3,:) = DATA(8967:34098,37);
-position_complete(1,:) = DATA(8967:34098,29);
-position_complete(2,:) = DATA(8967:34098,32);
-position_complete(3,:) = DATA(8967:34098,35);
-
-k = 1;
-
-% for i = 1 : size(tgps)
-%     if(tgps(i)>=182.36)
-%         tgps2(k) = tgps(i);
-%         for j = 1:size(DATA,1)
-%             if tgps(i) == DATA(j,1)
-%                  position(1,k) = DATA(j,29);
-%                  position(2,k) = DATA(j,32);
-%                  position(3,k) = DATA(j,35);
-%                  k = k+1;
-%              end
-%         end
-%     end
-% end
-% Fs = 1/mean(diff(tgps2));
-% % Determina il vettore del tempo
-% 
-% X = position(1,:);
-% Y = position(2,:);
-% Z = position(3,:);
-% t = (0:length(X)-1)/Fs;
-% % Interpola i dati ad una nuova frequenza di 1000 Hz
-% 
-% t_new = 0:1/10:max(t);
-% X_interp = interp1(t, X, t_new,'pchip');
-% Y_interp = interp1(t, Y, t_new,'pchip');
-% Z_interp = interp1(t, Z, t_new,'pchip');
-% GPS_interp(1,:) = X_interp;
-% GPS_interp(2,:) = Y_interp;
-% GPS_interp(3,:) = Z_interp;
-% j = 1;
-% 
-% for i = 1:1:size(X_interp,2)
-% Gps(:,j) = GPS_interp(:,i);
-% j = j+1;
-% end
-% t_gps = 0:dt_gps:511.7;
-% ta = timeseries(Gps,t_gps); %timeseries per il gps
-% % t_imu = 0:0.02:(size(acceleration,2)*0.02)-0.02;
-% 
-% % ts = timeseries(acceleration,t_imu);
-% s = 1;
-% 
-% for i = 1 : size(DATA(:,1))
-%     if DATA(i,1) >= 182.36
-%         timu(s,1) = DATA(i,1);
-%         s = s+1;
-%     end
-% end
-% Fs_a = 1/mean(diff(timu));
-% t_a = (0:length(acceleration(1,:))-1)/Fs_a;
-% % Interpola i dati ad una nuova frequenza di 1000 Hz
-% 
-% t_new_a = 0:1/20:max(t_a);
-% AX_interp = interp1(t_a, acceleration(1,:), t_new_a,'pchip');
-% AY_interp = interp1(t_a, acceleration(2,:), t_new_a,'pchip');
-% AZ_interp = interp1(t_a, acceleration(3,:), t_new_a,'pchip');
-% A_interp(1,:) = AX_interp;
-% A_interp(2,:) = AY_interp;
-% A_interp(3,:) = AZ_interp;
-% j = 1;
-% for i = 1:1:size(A_interp,2)
-% Imu(:,j) = A_interp(:,i);
-% j = j+1;
-% end
-% t_imu = 0:0.02:204.72;
-% ts = timeseries(Imu,t_imu);
+%Start simulation: 250s
+%End simulation: 500s
+acceleration(1,:) = DATA(12295:24577,31);
+acceleration(2,:) = DATA(12295:24577,34);
+acceleration(3,:) = DATA(12295:24577,37);
+position_complete(1,:) = DATA(12295:24577,29);
+position_complete(2,:) = DATA(12295:24577,32);
+position_complete(3,:) = DATA(12295:24577,35);
 
 k = 1;
 for i = 1 : size(tgps)
-    if(tgps(i)>182.36)
+    if(tgps(i) >= 250.05 && tgps(i) <= 500.086)
         for j = 1:size(DATA,1)
 
              if tgps(i) == DATA(j,1)
