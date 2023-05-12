@@ -8,7 +8,7 @@
 % vel = log_vars.velocity_gen;
 % acc = log_vars.acceleration_gen;
 % meas = [pos;acc];
-rand_acc = 0.05*randn(3,1);
+%rand_acc = 0.05*randn(3,1);
 Tc = 0:0.02:t_max;
 %Initialization of Matlab Function
 f = matlabFunction(F);
@@ -22,7 +22,7 @@ n= 100;
 log_KF(1).x_hat_pred = X_hat;
 for t = 0:dt:t_max
     %prediction step
-    [X_hat, P, F] = prediction_KF(X_hat, P, Q, dt,f,k,acceleration);
+    [X_hat, P, F] = prediction_KF(X_hat, P, Q, dt,f,k,Imu);
     %log_EKF.x_hat(:,k+1) = X_hat;
     log_KF(k).x_hat_pred= X_hat;
     log_KF(k).F_matrix = F;
@@ -61,10 +61,10 @@ end
 save('KF_struct', 'log_KF');
 
 
-function  [X_hat, P, F] = prediction_KF(X_hat, P, Q, dt,f,k,acceleration)
+function  [X_hat, P, F] = prediction_KF(X_hat, P, Q, dt,f,k,Imu)
 F = feval(f,dt);
-X_hat(7:9,1) = acceleration(:,k);
-X_hat = F*X_hat+[0.01*randn(9,1)];
+X_hat(7:9,1) = Imu(:,k);
+X_hat = F*X_hat;
 P = F*P*F'+Q;
 end
 
@@ -102,7 +102,7 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
     else
         if(count_size_meas > 0)
             selection_vector(2) = true;    
-            actual_meas = [actual_meas;ts.data(:,flag(2))]; %+[0.01*randn(3,1);0.05*randn(3,1)];    
+            actual_meas = [actual_meas;ts.data(:,flag(2))];    
         else
             selection_vector(2) = true;    
             actual_meas = ts.data(:,flag(2)) ;%+ 0.05*randn(3,1);     
@@ -143,7 +143,7 @@ if (selection_vector(1) == true && selection_vector(2) == true) %there are both 
     q_gps = innovation_gps'*inv(S_gps)*innovation_gps;
     q_imu = innovation_imu'*inv(S_imu)*innovation_imu;
 
-    if(q_gps > 0.2 && q_imu < 0.2) %takes only Imu measures
+    if(q_gps > 7.8 && q_imu < 7.8) %takes only Imu measures
         H(1:3,:) = []; %3x9
         R(1:3,:) = [];
         R(:,1:3) = []; %3x3
@@ -151,7 +151,7 @@ if (selection_vector(1) == true && selection_vector(2) == true) %there are both 
         X_hat = X_hat + L*innovation_imu; %9x1
         P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9
     end
-    if (q_gps < 0.2 && q_imu > 0.2) %takes only Gps measures
+    if (q_gps < 7.8 && q_imu > 7.8) %takes only Gps measures
         H(4:6,:) = []; %3x9
         R(4:6,:) = [];
         R(:,4:6) = []; %3x3
@@ -159,12 +159,12 @@ if (selection_vector(1) == true && selection_vector(2) == true) %there are both 
         X_hat = X_hat + L*innovation_gps; %9x1
         P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9
     end
-    if(q_gps > 0.2 && q_imu > 0.2) %takes nothing
+    if(q_gps > 7.8 && q_imu > 7.8) %takes nothing
         X_hat = X_hat;
         P = P;
     end
 
-    if(q_gps < 0.2 && q_imu < 0.2) %takes both measures
+    if(q_gps < 7.8 && q_imu < 7.8) %takes both measures
         L = P*H'*inv(S); %9x6
         X_hat = X_hat + L*innovation; %9x1
         P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9   
@@ -180,7 +180,7 @@ if (selection_vector(1) == false && selection_vector(2) == true ) % just Imu mea
         X_hat = X_hat + L*innovation_imu; %9x1
         P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9  
     end
-    if(q_imu > 0.2) %doesn't take measure
+    if(q_imu > 7.8) %doesn't take measure
         X_hat = X_hat;
         P = P;
     end
@@ -190,12 +190,12 @@ if (selection_vector(1) == true && selection_vector(2) == false) %just Gps measu
     S_gps = R+H*P*H';
     innovation_gps = actual_meas-H*X_hat;
     q_gps = innovation_gps'*inv(S_gps)*innovation_gps;
-    if(q_gps < 0.2) %takes measure
+    if(q_gps < 7.8) %takes measure
         L = P*H'*inv(S_gps); %9x6
         X_hat = X_hat + L*innovation_gps; %9x1
         P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9  
     end
-    if(q_gps > 0.2) %doesn't takes measure
+    if(q_gps > 7.8) %doesn't takes measure
         X_hat = X_hat;
         P = P;
     end

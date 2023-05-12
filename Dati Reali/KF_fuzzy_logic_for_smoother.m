@@ -22,7 +22,7 @@ n= 100;
 log_KF(1).x_hat_pred = X_hat;
 for t = 0:dt:t_max
     %prediction step
-    [X_hat, P, F] = prediction_KF(X_hat, P, Q, dt,f,k,acceleration);
+    [X_hat, P, F] = prediction_KF(X_hat, P, Q, dt,f,k,Imu);
     log_KF(k).x_hat_pred= X_hat;
     log_KF(k).F_matrix = F;
     log_KF(k).P_pred = P;
@@ -84,9 +84,9 @@ save('KF_struct', 'log_KF');
 % %plot(error_az);
 
 
-function  [X_hat, P, F] = prediction_KF(X_hat, P, Q, dt,f,k,acceleration)
+function  [X_hat, P, F] = prediction_KF(X_hat, P, Q, dt,f,k,Imu)
 F = feval(f,dt);
-X_hat(7:9,1) = acceleration(:,k);
+X_hat(7:9,1) = Imu(:,k);
 X_hat = F*X_hat;
 P = F*P*F'+Q;
 end

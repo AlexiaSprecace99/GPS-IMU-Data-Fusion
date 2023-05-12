@@ -25,7 +25,7 @@ actual_meas = [0 0 0 0 0 0]';   %contains measures at current time
 log_KF(1).x_hat_pred = X_hat;
 for t = 0:dt:t_max
     %prediction step
-    [X_hat, P, F] = prediction_KF(X_hat, P, Q, dt,f,k,acceleration);
+    [X_hat, P, F] = prediction_KF(X_hat, P, Q, dt,f,k,Imu);
     log_KF(k).x_hat_pred= X_hat;
     log_KF(k).F_matrix = F;
     log_KF(k).P_pred = P;
@@ -72,9 +72,9 @@ save('KF_struct', 'log_KF');
 % legend('gps z','estim z');
 
 %Prediction step: it been used acceleration measures from IMU
-function  [X_hat, P, F] = prediction_KF(X_hat, P, Q, dt,f,k,acceleration)
+function  [X_hat, P, F] = prediction_KF(X_hat, P, Q, dt,f,k,Imu)
 F = feval(f,dt); %F matrix depends on the sampling time
-X_hat(7:9,1) = acceleration(:,k); 
+X_hat(7:9,1) = Imu(:,k); 
 X_hat = F*X_hat;
 P = F*P*F'+Q;
 end
@@ -95,9 +95,9 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
         count_size_meas = count_size_meas + 1;
         selection_vector(1) = true;     % available measure
         actual_meas = ta.data(:,flag(1));    % measure saving in actual_meas
-        if t == 5 || t == 10 || t == 15 || t == 20 || t == 25 || t == 100 || t == 110 || t == 115 
-            actual_meas = actual_meas+10*rand(size(actual_meas));
-        end
+%         if t == 5 || t == 10 || t == 15 || t == 20 || t == 25 || t == 100 || t == 110 || t == 115 
+%             actual_meas = actual_meas+10*rand(size(actual_meas));
+%         end
     end
 
 

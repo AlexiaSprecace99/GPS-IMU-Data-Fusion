@@ -8,7 +8,7 @@
 % meas = [pos;vel;acc];
 rand_pos = 0.01*randn(3,1);
 rand_acc = 0.05*randn(3,1);
-Tc = 0:0.02:t_max-0.02;
+Tc = 0:0.02:t_max;
 
 %Initialization of Matlab Function
 f = matlabFunction(F);
@@ -22,9 +22,9 @@ flag = [0 0]';  % keeps track of the index of the most recent measurements alrea
 actual_meas = [0 0 0 0 0 0]';   %contains measures at current time
 
 log_EKF.x_hat(:,1) = X_hat;
-for t = dt:dt:t_max-0.02
+for t = dt:dt:t_max
     %prediction step
-    [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,acceleration);
+    [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,Imu);
     log_EKF.x_hat(:,k+1) = X_hat;
 
     %[actual_meas, selection_vector, flag] = getActualMeas(x,y,z,vx,vy,vz,ax,ay,az,flag,selection_vector, k, dt);
@@ -47,26 +47,65 @@ end
 [x_estimation]=[log_EKF.x_hat(1,:)];
 [y_estimation]=[log_EKF.x_hat(2,:)];
 [z_estimation] = [log_EKF.x_hat(3,:)];
+[ax_estimation] = [log_EKF.x_hat(7,:)];
+[ay_estimation] = [log_EKF.x_hat(8,:)];
+[az_estimation] = [log_EKF.x_hat(9,:)];
+[vx_estimation] = [log_EKF.x_hat(4,:)];
+[vy_estimation] = [log_EKF.x_hat(5,:)];
+[vz_estimation] = [log_EKF.x_hat(6,:)];
+
+
 grid on;
 figure(1);
-plot(Tc,position_complete(1,:),'r');hold on; grid on;
+plot(t_gps,Gps(1,:),'r');hold on; grid on;
 plot(Tc,x_estimation,'b'); 
-legend('gps x','estim x');
+legend('gps North position','estimated North position');
 
 figure(2);
-plot(Tc,position_complete(2,:),'g'); hold on; grid on;
+plot(t_gps,Gps(2,:),'g'); hold on; grid on;
 plot(Tc,y_estimation,'y');
-legend('gps y','estim y');
+legend('gps East position','estimated East position');
 
 figure(3);
-plot(Tc,position_complete(3,:),'k'); hold on; grid on;
+plot(t_gps,Gps(3,:),'k'); hold on; grid on;
 plot(Tc,z_estimation,'m'); hold on;
-legend('gps z','estim z');
+legend('gps Down position','estimated Down position');
+
+figure(4);
+plot(t_imu,Imu(1,:),'k'); hold on; grid on;
+plot(Tc,ax_estimation,'m'); hold on;
+legend('Imu North acceleration','estimated North acceleration');
+
+figure(5);
+plot(t_imu,Imu(2,:),'k'); hold on; grid on;
+plot(Tc,ay_estimation,'m'); hold on;
+legend('Imu East acceleration','estimated East acceleration');
+
+figure(6);
+plot(t_imu,Imu(3,:),'k'); hold on; grid on;
+plot(Tc,az_estimation,'m'); hold on;
+legend('Imu Down acceleration','estimated Down acceleration');
+
+figure(7);
+plot(t_gps,VX,'k'); hold on; grid on;
+plot(Tc,vx_estimation,'m'); hold on;
+legend('North velocity','estimated North velocity');
+
+figure(8);
+plot(t_gps,VY,'k'); hold on; grid on;
+plot(Tc,vy_estimation,'m'); hold on;
+legend('East velocity','estimated East velocity');
+
+figure(9);
+plot(t_gps,VZ,'k'); hold on; grid on;
+plot(Tc,vz_estimation,'m'); hold on;
+legend('Down velocity','estimated Down velocity');
+
 
 %Prediction step: it been used acceleration measures from IMU
-function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,acceleration)
+function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,Imu)
 F = feval(f,dt); %F matrix depends on the sampling time
-X_hat(7:9,1) = acceleration(:,k); 
+X_hat(7:9,1) = Imu(:,k); 
 X_hat = F*X_hat;
 P = F*P*F'+Q;
 end

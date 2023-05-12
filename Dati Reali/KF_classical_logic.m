@@ -18,17 +18,18 @@ selection_vector = [false false]';
 flag = [0 0]'; 
 actual_meas = [0 0 0 0 0 0]';  
 count = 0;
-n= 100;
-%log_EKF.x_hat(:,1) = X_hat;
+n = 100;
+Tc = 0:0.02:t_max;
+log_EKF.x_hat(:,1) = X_hat;
 for t = dt:dt:t_max
     %prediction step
-    [X_hat(:,k+1), P] = prediction_KF(X_hat(:,k), P, Q, dt,f,k,acceleration);
-    %log_EKF.x_hat(:,k+1) = X_hat;
+    [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,Imu);
+    log_EKF.x_hat(:,k+1) = X_hat;
 
     
     [actual_meas, selection_vector, flag] = getActualMeas(ts,ta, flag, selection_vector,t);
     % correction step
-    [X_hat(:,k+1), P] = correction_KF(X_hat(:,k+1), P, actual_meas,selection_vector,H,R,t,k);
+    [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t,k);
 
 
 %     error_x(1,k) = trajectory_gen(1,k)-log_EKF.x_hat(1,k);
@@ -58,15 +59,63 @@ end
 [x_estimation]=[X_hat(1,:)]';
 [y_estimation]=[X_hat(2,:)]';
 [z_estimation] = [X_hat(3,:)]';
+[ax_estimation] = [log_EKF.x_hat(7,:)];
+[ay_estimation] = [log_EKF.x_hat(8,:)];
+[az_estimation] = [log_EKF.x_hat(9,:)];
+[vx_estimation] = [log_EKF.x_hat(4,:)];
+[vy_estimation] = [log_EKF.x_hat(5,:)];
+[vz_estimation] = [log_EKF.x_hat(6,:)];
+
 grid on;
 figure(1);
-plot(position_complete(3,:),'r'); hold on;
-plot(z_estimation,'b');
+plot(t_gps,Gps(1,:),'r');hold on; grid on;
+plot(Tc,x_estimation,'b'); 
+legend('gps North position','estimated North position');
+
+figure(2);
+plot(t_gps,Gps(2,:),'g'); hold on; grid on;
+plot(Tc,y_estimation,'y');
+legend('gps East position','estimated East position');
+
+figure(3);
+plot(t_gps,Gps(3,:),'k'); hold on; grid on;
+plot(Tc,z_estimation,'m'); hold on;
+legend('gps Down position','estimated Down position');
+
+figure(4);
+plot(t_imu,Imu(1,:),'k'); hold on; grid on;
+plot(Tc,ax_estimation,'m'); hold on;
+legend('Imu North acceleration','estimated North acceleration');
+
+figure(5);
+plot(t_imu,Imu(2,:),'k'); hold on; grid on;
+plot(Tc,ay_estimation,'m'); hold on;
+legend('Imu East acceleration','estimated East acceleration');
+
+figure(6);
+plot(t_imu,Imu(3,:),'k'); hold on; grid on;
+plot(Tc,az_estimation,'m'); hold on;
+legend('Imu Down acceleration','estimated Down acceleration');
+
+figure(7);
+plot(t_gps,VX,'k'); hold on; grid on;
+plot(Tc,vx_estimation,'m'); hold on;
+legend('North velocity','estimated North velocity');
+
+figure(8);
+plot(t_gps,VY,'k'); hold on; grid on;
+plot(Tc,vy_estimation,'m'); hold on;
+legend('East velocity','estimated East velocity');
+
+figure(9);
+plot(t_gps,VZ,'k'); hold on; grid on;
+plot(Tc,vz_estimation,'m'); hold on;
+legend('Down velocity','estimated Down velocity');
 
 
-function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,acceleration)
+function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,Imu)
 F = feval(f,dt);
-X_hat(7:9,1) = acceleration(:,k);
+X_hat(7:9,1) = Imu(:,k);
 X_hat = F*X_hat+[0.01*randn(9,1)];
 P = F*P*F'+Q;
 end
@@ -143,7 +192,7 @@ if (selection_vector(1) == true && selection_vector(2) == true) %there are both 
     q_gps = innovation_gps'*inv(S_gps)*innovation_gps;
     q_imu = innovation_imu'*inv(S_imu)*innovation_imu;
 
-    if(q_gps > 0.2 && q_imu < 0.2) %takes only Imu measures
+    if(q_gps > 7.8 && q_imu < 7.8) %takes only Imu measures
         H(1:3,:) = []; %3x9
         R(1:3,:) = [];
         R(:,1:3) = []; %3x3
@@ -151,7 +200,7 @@ if (selection_vector(1) == true && selection_vector(2) == true) %there are both 
         X_hat = X_hat + L*innovation_imu; %9x1
         P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9
     end
-    if (q_gps < 0.2 && q_imu > 0.2) %takes only Gps measures
+    if (q_gps < 7.8 && q_imu > 7.8) %takes only Gps measures
         H(4:6,:) = []; %3x9
         R(4:6,:) = [];
         R(:,4:6) = []; %3x3
@@ -159,12 +208,12 @@ if (selection_vector(1) == true && selection_vector(2) == true) %there are both 
         X_hat = X_hat + L*innovation_gps; %9x1
         P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9
     end
-    if(q_gps > 0.2 && q_imu > 0.2) %takes nothing
+    if(q_gps > 7.8 && q_imu > 7.8) %takes nothing
         X_hat = X_hat;
         P = P;
     end
 
-    if(q_gps < 0.2 && q_imu < 0.2) %takes both measures
+    if(q_gps < 7.8 && q_imu < 7.8) %takes both measures
         L = P*H'*inv(S); %9x6
         X_hat = X_hat + L*innovation; %9x1
         P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9   
@@ -175,12 +224,12 @@ if (selection_vector(1) == false && selection_vector(2) == true ) % just Imu mea
     S_imu = R+H*P*H';
     innovation_imu = actual_meas-H*X_hat;
     q_imu = innovation_imu'*inv(S_imu)*innovation_imu;
-    if(q_imu < 0.2) %takes measure
+    if(q_imu < 7.8) %takes measure
         L = P*H'*inv(S_imu); %9x6
         X_hat = X_hat + L*innovation_imu; %9x1
         P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9  
     end
-    if(q_imu > 0.2) %doesn't take measure
+    if(q_imu > 7.8) %doesn't take measure
         X_hat = X_hat;
         P = P;
     end
@@ -190,7 +239,7 @@ if (selection_vector(1) == true && selection_vector(2) == false) %just Gps measu
     S_gps = R+H*P*H';
     innovation_gps = actual_meas-H*X_hat;
     q_gps = innovation_gps'*inv(S_gps)*innovation_gps;
-    if(q_gps < 0.2) %takes measure
+    if(q_gps < 7.8) %takes measure
         L = P*H'*inv(S_gps); %9x6
         X_hat = X_hat + L*innovation_gps; %9x1
         P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9  
