@@ -41,6 +41,12 @@ for t = dt:dt:t_max
     error_x(1,k) = trajectory_gen(1,k)-log_EKF.x_hat(1,k);
     error_y(1,k) = trajectory_gen(2,k)-log_EKF.x_hat(2,k);
     error_z(1,k) = trajectory_gen(3,k)-log_EKF.x_hat(3,k);
+    error_vx(1,k) = velocity_gen(1,k)-log_EKF.x_hat(4,k);
+    error_vy(1,k) = velocity_gen(2,k)-log_EKF.x_hat(5,k);
+    error_vz(1,k) = velocity_gen(3,k)-log_EKF.x_hat(6,k);
+    error_ax(1,k) = acceleration_gen(1,k)-log_EKF.x_hat(7,k);
+    error_ay(1,k) = acceleration_gen(2,k)-log_EKF.x_hat(8,k);
+    error_az(1,k) = acceleration_gen(3,k)-log_EKF.x_hat(9,k);
 
     k = k + 1;
 end
@@ -64,6 +70,36 @@ grid on;
 figure(4); grid on;
 plot(Tc,error_z); grid on;
 legend('Down position error');
+
+grid on;
+figure(5); grid on;
+plot(Tc,error_vx); grid on;
+legend('North velocity error');
+
+grid on;
+figure(6); grid on;
+plot(Tc,error_vy); grid on;
+legend('east velocity error');
+
+grid on;
+figure(7); grid on;
+plot(Tc,error_vz); grid on;
+legend('Down velocity error');
+
+grid on;
+figure(8); grid on;
+plot(Tc,error_ax); grid on;
+legend('North acceleration error');
+
+grid on;
+figure(9); grid on;
+plot(Tc,error_ay); grid on;
+legend('East acceleration error');
+
+grid on;
+figure(10); grid on;
+plot(Tc,error_az); grid on;
+legend('Down acceleration error');
 
 %Prediction step: it been used acceleration measures from IMU
 function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,log_vars,k)
@@ -89,9 +125,9 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
         count_size_meas = count_size_meas + 1;
         selection_vector(1) = true;     % available measure
         actual_meas = ta.data(:,flag(1))+rand_pos;    % measure saving in actual_meas
-        if t == 5 || t == 10 || t == 15 || t == 20 || t == 25 || t == 100 || t == 110 || t == 115
-             actual_meas = actual_meas+1*rand(size(actual_meas));
-        end
+%         if t == 5 || t == 10 || t == 15 || t == 20 || t == 25 || t == 100 || t == 110 || t == 115
+%              actual_meas = actual_meas+1*rand(size(actual_meas));
+%         end
     end
 
 
