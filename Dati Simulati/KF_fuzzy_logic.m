@@ -9,7 +9,7 @@ vel = log_vars.velocity_gen;
 acc = log_vars.acceleration_gen;
 meas = [pos;acc];
 rand_acc = 0.05*randn(3,1);
-Tc = dt:1/75:t_max;
+Tc = 0:1/75:t_max;
 
 %Initialization of Matlab Function
 f = matlabFunction(F);
@@ -21,10 +21,10 @@ actual_meas = [0 0 0 0 0 0]';
 count = 0;
 n= 100;
 log_EKF.x_hat(:,1) = X_hat;
-for t = dt:dt:t_max
+for t = 0:dt:t_max
     %prediction step
     [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,log_vars,k);
-    log_EKF.x_hat(:,k+1) = X_hat;
+    log_EKF.x_hat(:,k) = X_hat;
    
     
     [actual_meas, selection_vector, flag] = getActualMeas(ts,ta, flag, selection_vector,t);
@@ -87,9 +87,9 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
         count_size_meas = count_size_meas + 1;
         selection_vector(1) = true;    
         actual_meas = ta.data(:,flag(1)); 
-        if t == 5 || t == 10 || t == 15 || t == 20 || t == 25 || t == 100 || t == 110 || t == 115
-            actual_meas = actual_meas+30*rand(size(actual_meas));
-             end
+%         if t == 5 || t == 10 || t == 15 || t == 20 || t == 25 || t == 100 || t == 110 || t == 115
+%             actual_meas = actual_meas+30*rand(size(actual_meas));
+%              end
     end
 
 
@@ -234,17 +234,4 @@ if (selection_vector(1) == false && selection_vector(2) == false ) %no measure a
         X_hat = beta0*X_hat;
         P = beta0*P;
 end
-
-%Compute innovation for imu
-%  R_i = inv(R_imu(7:9,7:9));
-%  Rimu_inv = blkdiag(0,0,0,0,0,0,R_i);
-%  K_imu = P*H_imu'*Rimu_inv; %Matrix 9x9
-%  innovation_imu = K_imu*(meas(:,k)-H_imu*X_hat);
-%  P_innovation_imu = H_imu'*Rimu_inv*H_imu;
-
-% innovation_gps = pos(:,k)-H_gps*X_hat;
-% S_gps = R_gps+H_gps*P*H_gps';
-% L_gps = P*H_gps'*inv(S_gps);
-%X_hat = X_hat + L*innovation_gps;
-%P = (eye(9)-L_gps*H_gps)*P*(eye(9)-L_gps*H_gps)'+L_gps*R_gps*L_gps';
 end

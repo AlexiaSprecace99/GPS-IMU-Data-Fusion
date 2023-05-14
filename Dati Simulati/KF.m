@@ -8,7 +8,7 @@ acc = log_vars.acceleration_gen;
 meas = [pos;vel;acc];
 rand_pos = 0.01*randn(3,1);
 rand_acc = 0.05*randn(3,1);
-Tc = dt:1/75:t_max;
+Tc = 0:1/75:t_max;
 
 %Initialization of Matlab Function
 f = matlabFunction(F);
@@ -22,10 +22,10 @@ flag = [0 0]';  % keeps track of the index of the most recent measurements alrea
 actual_meas = [0 0 0 0 0 0]';   %contains measures at current time
 
 log_EKF.x_hat(:,1) = X_hat;
-for t = dt:dt:t_max
+for t = 0:dt:t_max
     %prediction step
     [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,log_vars,k);
-    log_EKF.x_hat(:,k+1) = X_hat;
+    log_EKF.x_hat(:,k) = X_hat;
 
     %[actual_meas, selection_vector, flag] = getActualMeas(x,y,z,vx,vy,vz,ax,ay,az,flag,selection_vector, k, dt);
                                                        
@@ -124,7 +124,7 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
     else
         count_size_meas = count_size_meas + 1;
         selection_vector(1) = true;     % available measure
-        actual_meas = ta.data(:,flag(1))+rand_pos;    % measure saving in actual_meas
+        actual_meas = ta.data(:,flag(1));    % measure saving in actual_meas
 %         if t == 5 || t == 10 || t == 15 || t == 20 || t == 25 || t == 100 || t == 110 || t == 115
 %              actual_meas = actual_meas+1*rand(size(actual_meas));
 %         end
@@ -142,10 +142,10 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
     else
         if(count_size_meas > 0)
             selection_vector(2) = true;    % available measure
-            actual_meas = [actual_meas;ts.data(:,flag(2))]+[rand_pos;rand_acc];    % % measure saving in actual_meas
+            actual_meas = [actual_meas;ts.data(:,flag(2))];    % % measure saving in actual_meas
         else
             selection_vector(2) = true;    % available measure
-            actual_meas = ts.data(:,flag(2))+rand_acc;   % measure saving in actual_meas 
+            actual_meas = ts.data(:,flag(2));   % measure saving in actual_meas 
         end
     end
 end
@@ -179,16 +179,4 @@ L = P*H'*inv(S); %9x6
 X_hat = X_hat + L*innovation; %9x1
 P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9
 end
- %Compute innovation for imu
-%  R_i = inv(R_imu(7:9,7:9));
-%  Rimu_inv = blkdiag(0,0,0,0,0,0,R_i);
-%  K_imu = P*H_imu'*Rimu_inv; %Matrix 9x9
-%  innovation_imu = K_imu*(meas(:,k)-H_imu*X_hat);
-%  P_innovation_imu = H_imu'*Rimu_inv*H_imu;
-
-% innovation_gps = pos(:,k)-H_gps*X_hat;
-% S_gps = R_gps+H_gps*P*H_gps';
-% L_gps = P*H_gps'*inv(S_gps);
-%X_hat = X_hat + L*innovation_gps;
-%P = (eye(9)-L_gps*H_gps)*P*(eye(9)-L_gps*H_gps)'+L_gps*R_gps*L_gps';
 end
