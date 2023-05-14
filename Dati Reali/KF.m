@@ -86,6 +86,7 @@ plot(t_imu,Imu(3,:),'k'); hold on; grid on;
 plot(Tc,az_estimation,'m'); hold on;
 legend('Imu Down acceleration','estimated Down acceleration');
 
+
 figure(7);
 plot(t_gps,VX,'k'); hold on; grid on;
 plot(Tc,vx_estimation,'m'); hold on;
@@ -97,7 +98,7 @@ plot(Tc,vy_estimation,'m'); hold on;
 legend('East velocity','estimated East velocity');
 
 figure(9);
-plot(t_gps,VZ,'k'); hold on; grid on;
+plot(t_gps ,VZ,'k'); hold on; grid on;
 plot(Tc,vz_estimation,'m'); hold on;
 legend('Down velocity','estimated Down velocity');
 
@@ -105,7 +106,7 @@ legend('Down velocity','estimated Down velocity');
 %Prediction step: it been used acceleration measures from IMU
 function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,Imu)
 F = feval(f,dt); %F matrix depends on the sampling time
-X_hat(7:9,1) = Imu(:,k); 
+X_hat(7:9,1) = Imu(:,k);
 X_hat = F*X_hat;
 P = F*P*F'+Q;
 end
@@ -178,16 +179,4 @@ L = P*H'*inv(S); %9x6
 X_hat = X_hat + L*innovation; %9x1
 P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9
 end
- %Compute innovation for imu
-%  R_i = inv(R_imu(7:9,7:9));
-%  Rimu_inv = blkdiag(0,0,0,0,0,0,R_i);
-%  K_imu = P*H_imu'*Rimu_inv; %Matrix 9x9
-%  innovation_imu = K_imu*(meas(:,k)-H_imu*X_hat);
-%  P_innovation_imu = H_imu'*Rimu_inv*H_imu;
-
-% innovation_gps = pos(:,k)-H_gps*X_hat;
-% S_gps = R_gps+H_gps*P*H_gps';
-% L_gps = P*H_gps'*inv(S_gps);
-%X_hat = X_hat + L*innovation_gps;
-%P = (eye(9)-L_gps*H_gps)*P*(eye(9)-L_gps*H_gps)'+L_gps*R_gps*L_gps';
 end

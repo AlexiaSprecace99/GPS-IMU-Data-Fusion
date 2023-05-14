@@ -96,17 +96,18 @@ for i = 1 : size(tgps)
     end
 end
 
+%Gps interpolation
 
 Fs = 1/mean(diff(tgps2));
 
-% Determina il vettore del tempo
 X = position(1,:);
 Y = position(2,:);
 Z = position(3,:);
 
 t = (0:length(X)-1)/Fs;
 tgps2 = tgps2 - 249.96;
-% Interpola i dati ad una nuova frequenza di 1000 Hz
+
+%Interpolation 10hz
 t_new = 0:1/10:max(t);
 X_interp = interp1(tgps2, X, t_new,'spline');
 Y_interp = interp1(tgps2, Y, t_new,'spline');
@@ -124,8 +125,9 @@ j = j+1;
 end
 
 t_gps = 0:dt_gps:250.1;
-ta = timeseries(Gps,t_gps); %timeseries per il gps
+ta = timeseries(Gps,t_gps); %gps timeseries
 
+%Imu interpolation 
 s = 1;
 for i = 1 : size(DATA(:,1))
     if DATA(i,1) >= 249.96 && DATA(i,1) <= 500.086
@@ -139,7 +141,9 @@ Fs_a = 1/mean(diff(timu));
 
 t_a = (0:length(acceleration(1,:))-1)/Fs_a;
 timu = timu - 249.96;
-% Interpola i dati ad una nuova frequenza di 1000 Hz
+
+% Interpolation 50hz
+
 t_new_a = 0:1/50:max(t_a);
 AX_interp = interp1(timu, acceleration(1,:), t_new_a,'spline');
 AY_interp = interp1(timu, acceleration(2,:), t_new_a,'spline');
@@ -159,14 +163,9 @@ end
 t_imu = 0:0.02:250.12;
 ts = timeseries(Imu,t_imu);
 
+%Velocity interpolation 
 
-VX = interp1(tgps2, velocity(1,:), t_new,'spline');
-VY = interp1(tgps2, velocity(2,:), t_new,'spline');
-VZ = interp1(tgps2, velocity(3,:), t_new,'spline');
+VX = interp1(tgps2, velocity(1,:), t_new,'linear');
+VY = interp1(tgps2, velocity(2,:), t_new,'linear');
+VZ = interp1(tgps2, velocity(3,:), t_new,'linear');
 
-
-% t_gps = 0:0.1:(size(position,2)*0.1)-0.1;
-% ta = timeseries(position,t_gps); %timeseries per il gps
-% 
-% t_imu = 0:0.02:(size(acceleration,2)*0.02)-0.02;
-% ts = timeseries(acceleration,t_imu);

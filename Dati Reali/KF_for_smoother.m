@@ -51,25 +51,7 @@ end
 
 
 save('KF_struct', 'log_KF');
-% [x_estimation]=[log_EKF(:,k).x_hat(1,:)];
-% [y_estimation]=[log_EKF.x_hat(2,:)];
-% [z_estimation] = [log_EKF.x_hat(3,:)];
-% 
 
-% figure(1);
-% plot(Tc,position_complete(1,:),'r');hold on; grid on;
-% plot(Tc,x_estimation,'b'); 
-% legend('gps x','estim x');
-% 
-% figure(2);
-% plot(Tc,position_complete(2,:),'g'); hold on; grid on;
-% plot(Tc,y_estimation,'y');
-% legend('gps y','estim y');
-% 
-% figure(3);
-% plot(Tc,position_complete(3,:),'k'); hold on; grid on;
-% plot(Tc,z_estimation,'m'); hold on;
-% legend('gps z','estim z');
 
 %Prediction step: it been used acceleration measures from IMU
 function  [X_hat, P, F] = prediction_KF(X_hat, P, Q, dt,f,k,Imu)
@@ -149,16 +131,4 @@ L = P*H'*inv(S); %9x6
 X_hat = X_hat + L*innovation; %9x1
 P = (eye(9)-L*H)*P*(eye(9)-L*H)'+L*R*L'; %9x9
 end
- %Compute innovation for imu
-%  R_i = inv(R_imu(7:9,7:9));
-%  Rimu_inv = blkdiag(0,0,0,0,0,0,R_i);
-%  K_imu = P*H_imu'*Rimu_inv; %Matrix 9x9
-%  innovation_imu = K_imu*(meas(:,k)-H_imu*X_hat);
-%  P_innovation_imu = H_imu'*Rimu_inv*H_imu;
-
-% innovation_gps = pos(:,k)-H_gps*X_hat;
-% S_gps = R_gps+H_gps*P*H_gps';
-% L_gps = P*H_gps'*inv(S_gps);
-%X_hat = X_hat + L*innovation_gps;
-%P = (eye(9)-L_gps*H_gps)*P*(eye(9)-L_gps*H_gps)'+L_gps*R_gps*L_gps';
 end

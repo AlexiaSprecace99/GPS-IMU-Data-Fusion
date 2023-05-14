@@ -30,22 +30,6 @@ for t = 0:dt:t_max
     % correction step
     [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t,k);
 
-%     graf_x(k) = position(1,k);
-%     graf_y(k) = position(2,k);
-%     graf_z(k) = position(3,k);
-% 
-%     graf_ax(k) = acceleration(1,k);
-%     graf_ay(k) = acceleration(2,k);
-%     graf_az(k) = acceleration(3,k);
-% 
-%     error_x(1,k) = position(1,k)-log_EKF.x_hat(1,k);
-%     error_y(1,k) = position(2,k)-log_EKF.x_hat(2,k);
-%     error_z(1,k) = position(3,k)-log_EKF.x_hat(3,k);
-% 
-%     error_ax(1,k) = acceleration(1,k)-log_EKF.x_hat(7,k);
-%     error_ay(1,k) = acceleration(2,k)-log_EKF.x_hat(8,k);
-%     error_az(1,k) = acceleration(3,k)-log_EKF.x_hat(9,k);
-
 
     k = k + 1;
 end
@@ -276,17 +260,4 @@ if (selection_vector(1) == false && selection_vector(2) == false ) %no measure a
         X_hat = beta0*X_hat;
         P = beta0*P;
 end
-
-%Compute innovation for imu
-%  R_i = inv(R_imu(7:9,7:9));
-%  Rimu_inv = blkdiag(0,0,0,0,0,0,R_i);
-%  K_imu = P*H_imu'*Rimu_inv; %Matrix 9x9
-%  innovation_imu = K_imu*(meas(:,k)-H_imu*X_hat);
-%  P_innovation_imu = H_imu'*Rimu_inv*H_imu;
-
-% innovation_gps = pos(:,k)-H_gps*X_hat;
-% S_gps = R_gps+H_gps*P*H_gps';
-% L_gps = P*H_gps'*inv(S_gps);
-%X_hat = X_hat + L*innovation_gps;
-%P = (eye(9)-L_gps*H_gps)*P*(eye(9)-L_gps*H_gps)'+L_gps*R_gps*L_gps';
 end

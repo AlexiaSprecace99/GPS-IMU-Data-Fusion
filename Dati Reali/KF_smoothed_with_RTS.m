@@ -3,8 +3,8 @@ clc
 
 load('KF_struct.mat')
 
-% La procedura in avanti viene svolta nel file EKF_smoother.mat dove si
-% ricavano x_hat(k|k), x_hat(k+1|k), P(k|k), P(k+1|k)
+% The forward procedure is carried out in the EKF_smoother.mat file where
+% we derive x_hat(k|k), x_hat(k+1|k), P(k|k), P(k+1|k)
 
 %x_hat(n|n)
 log_KF(size(log_KF,2)).x_hat_smoothed = log_KF(size(log_KF,2)).x_hat_corr;
@@ -12,7 +12,7 @@ log_KF(size(log_KF,2)).x_hat_smoothed = log_KF(size(log_KF,2)).x_hat_corr;
 %P(n|n)
 log_KF(size(log_KF,2)).P_smoothed = log_KF(size(log_KF,2)).P_corr;
 
-%Procedura in indietro
+% Backward procedure
 for k = size(log_KF,2)-1:-1:1
     Ck = log_KF(k).P_corr*(log_KF(k+1).F_matrix)'*(log_KF(k+1).P_pred)^-1;
 

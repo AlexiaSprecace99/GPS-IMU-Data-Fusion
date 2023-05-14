@@ -34,29 +34,11 @@ for t = 0:dt:t_max
     log_KF(k).x_hat_corr= X_hat;
     log_KF(k).P_corr = P;
 
-%     error_x(1,k) = trajectory_gen(1,k)-log_EKF.x_hat(1,k);
-%     error_y(1,k) = trajectory_gen(2,k)-log_EKF.x_hat(2,k);
-%     error_z(1,k) = trajectory_gen(3,k)-log_EKF.x_hat(3,k);
-% 
-%     error_ax(1,k) = acceleration_gen(1,k)-log_EKF.x_hat(7,k);
-%     error_ay(1,k) = acceleration_gen(2,k)-log_EKF.x_hat(8,k);
-%     error_az(1,k) = acceleration_gen(3,k)-log_EKF.x_hat(9,k);
 
 
     k = k + 1;
 end
-% plot3(trajectory_gen(1,:),trajectory_gen(2,:),trajectory_gen(3,:)); hold on;
-% plot3(log_EKF.x_hat(1,:),log_EKF.x_hat(2,:),log_EKF.x_hat(3,:));
-% legend
-% 
-% figure(2); grid on; 
-% plot(error_x);
-% 
-% figure(3); grid on; 
-% plot(error_y);
-% 
-% figure(4); grid on; 
-% plot(error_z);
+
 
 save('KF_struct', 'log_KF');
 
@@ -206,18 +188,5 @@ if (selection_vector(1) == false && selection_vector(2) == false )
         X_hat = X_hat;
         P = P;
 end
-
-%Compute innovation for imu
-%  R_i = inv(R_imu(7:9,7:9));
-%  Rimu_inv = blkdiag(0,0,0,0,0,0,R_i);
-%  K_imu = P*H_imu'*Rimu_inv; %Matrix 9x9
-%  innovation_imu = K_imu*(meas(:,k)-H_imu*X_hat);
-%  P_innovation_imu = H_imu'*Rimu_inv*H_imu;
-
-% innovation_gps = pos(:,k)-H_gps*X_hat;
-% S_gps = R_gps+H_gps*P*H_gps';
-% L_gps = P*H_gps'*inv(S_gps);
-%X_hat = X_hat + L*innovation_gps;
-%P = (eye(9)-L_gps*H_gps)*P*(eye(9)-L_gps*H_gps)'+L_gps*R_gps*L_gps';
 end
 
