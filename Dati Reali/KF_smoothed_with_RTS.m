@@ -62,17 +62,17 @@ end
 
 grid on;
 figure(1);
-plot(t_gps,Gps(1,:),'r');hold on; grid on;
+plot(t_gps,GPS(1,:),'r');hold on; grid on;
 plot(Tc,x_estimation,'b'); 
 legend('gps North position','estimated North position');
 
 figure(2);
-plot(t_gps,Gps(2,:),'g'); hold on; grid on;
+plot(t_gps,GPS(2,:),'g'); hold on; grid on;
 plot(Tc,y_estimation,'y');
 legend('gps East position','estimated East position');
 
 figure(3);
-plot(t_gps,Gps(3,:),'k'); hold on; grid on;
+plot(t_gps,GPS(3,:),'k'); hold on; grid on;
 plot(Tc,z_estimation,'m'); hold on;
 legend('gps Down position','estimated Down position');
 

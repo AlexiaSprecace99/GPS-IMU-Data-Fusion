@@ -5,7 +5,7 @@ load('KF_struct.mat')
 
 % The forward procedure is carried out in the EKF_smoother.mat file where
 % we derive x_hat(k|k), x_hat(k+1|k), P(k|k), P(k+1|k)
-
+T_prof = 0:0.02:245.74;
 %x_hat(n|n)
 log_KF(size(log_KF,2)).x_hat_smoothed = log_KF(size(log_KF,2)).x_hat_corr;
 
@@ -62,17 +62,17 @@ end
 
 grid on;
 figure(1);
-plot(t_gps,Gps(1,:),'r');hold on; grid on;
+plot(t_gps,GPS(1,:),'r');hold on; grid on;
 plot(Tc,x_estimation,'b'); 
 legend('gps North position','estimated North position');
 
 figure(2);
-plot(t_gps,Gps(2,:),'g'); hold on; grid on;
+plot(t_gps,GPS(2,:),'g'); hold on; grid on;
 plot(Tc,y_estimation,'y');
 legend('gps East position','estimated East position');
 
 figure(3);
-plot(t_gps,Gps(3,:),'k'); hold on; grid on;
+plot(t_gps,GPS(3,:),'k'); hold on; grid on;
 plot(Tc,z_estimation,'m'); hold on;
 legend('gps Down position','estimated Down position');
 
