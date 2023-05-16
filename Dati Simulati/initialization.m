@@ -22,7 +22,8 @@ Ad_0 = 0;
 X_start = [Pn_0 Pe_0 Pd_0 Vn_0 Ve_0 Vd_0 An_0 Ae_0 Ad_0]';
 
 %Standard Deviation on the Initial State 
-std_dev_init = [0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01];
+std_dev_init = [1 1 1 0.1 0.1 0.1 0.01 0.01 0.01];
+
 
 %Initial Estimate
 X_hat = X_start + (std_dev_init)*randn(size(X_start,1),1);
@@ -39,8 +40,8 @@ F = [eye(3) T*eye(3) (T^2)*eye(3)/2; zeros(3) eye(3) T*eye(3); zeros(3) zeros(3)
 %acceleration)
 dt_gps = 0.2; %Sampling Time for the Gps sensor
 dt_imu = 1/75; %Sampling Time for the IMU
-std_dev_gps = 0.05; %Standard Deviation for the GPS
-std_dev_imu = 0.01; %Standard Deviation for the IMU
+std_dev_gps = 2; %Standard Deviation for the GPS
+std_dev_imu = 0.1; %Standard Deviation for the IMU
 R_gps = blkdiag(std_dev_gps,std_dev_gps,std_dev_gps)^2; %Gps variance matrix 
 R_imu = blkdiag(std_dev_imu,std_dev_imu,std_dev_imu)^2; %Imu variance matrix
 
