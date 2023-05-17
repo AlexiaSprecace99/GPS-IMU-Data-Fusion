@@ -55,51 +55,72 @@ figure(1);
 plot3(trajectory_gen(1,:),trajectory_gen(2,:),trajectory_gen(3,:),'r');
 hold on; 
 plot3(log_EKF.x_hat(1,:),log_EKF.x_hat(2,:),log_EKF.x_hat(3,:),'b');
+xlabel('x[m]');
+ylabel('y[m]');
+zlabel('z[m]');
 
 grid on;
 figure(2); 
 plot(Tc,error_x);
 legend('North position error');
+xlabel('T[s]');
+ylabel('North position error[m]');
 
 grid on;
 figure(3); 
 plot(Tc,error_y);
 legend('East position error');
+xlabel('T[s]');
+ylabel('East position error[m]');
 
 grid on;
 figure(4); grid on;
 plot(Tc,error_z); grid on;
 legend('Down position error');
+xlabel('T[s]');
+ylabel('Down position error[m]');
 
 grid on;
 figure(5); grid on;
 plot(Tc,error_vx); grid on;
 legend('North velocity error');
+xlabel('T[s]');
+ylabel('North velocity error[m/s]');
 
 grid on;
 figure(6); grid on;
 plot(Tc,error_vy); grid on;
-legend('east velocity error');
+legend('East velocity error');
+xlabel('T[s]');
+ylabel('East velocity error[m/s]');
 
 grid on;
 figure(7); grid on;
 plot(Tc,error_vz); grid on;
 legend('Down velocity error');
+xlabel('T[s]');
+ylabel('Down velocity error[m/s]');
 
 grid on;
 figure(8); grid on;
 plot(Tc,error_ax); grid on;
 legend('North acceleration error');
+xlabel('T[s]');
+ylabel('North acceleration error[m/s^2]');
 
 grid on;
 figure(9); grid on;
 plot(Tc,error_ay); grid on;
 legend('East acceleration error');
+xlabel('T[s]');
+ylabel('East acceleration error[m/s^2]');
 
 grid on;
 figure(10); grid on;
 plot(Tc,error_az); grid on;
 legend('Down acceleration error');
+xlabel('T[s]');
+ylabel('Down acceleration error[m/s^2]');
 
 %Prediction step: it been used acceleration measures from IMU
 function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,log_vars,k)
