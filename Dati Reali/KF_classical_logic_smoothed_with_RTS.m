@@ -65,46 +65,64 @@ figure(1);
 plot(t_gps,GPS(1,:),'r');hold on; grid on;
 plot(Tc,x_estimation,'b'); 
 legend('gps North position','estimated North position');
+xlabel('T[s]');
+ylabel('North position[m]');
 
 figure(2);
 plot(t_gps,GPS(2,:),'g'); hold on; grid on;
 plot(Tc,y_estimation,'y');
 legend('gps East position','estimated East position');
+xlabel('T[s]');
+ylabel('East position[m]');
 
 figure(3);
 plot(t_gps,GPS(3,:),'k'); hold on; grid on;
 plot(Tc,z_estimation,'m'); hold on;
 legend('gps Down position','estimated Down position');
+xlabel('T[s]');
+ylabel('Down position[m]');
 
 figure(4);
 plot(t_imu,Imu(1,:),'k'); hold on; grid on;
 plot(Tc,ax_estimation,'m'); hold on;
 legend('Imu North acceleration','estimated North acceleration');
+xlabel('T[s]');
+ylabel('North acceleration[m/s^2]');
 
 figure(5);
 plot(t_imu,Imu(2,:),'k'); hold on; grid on;
 plot(Tc,ay_estimation,'m'); hold on;
 legend('Imu East acceleration','estimated East acceleration');
+xlabel('T[s]');
+ylabel('East acceleration[m/s^2]');
 
 figure(6);
 plot(t_imu,Imu(3,:),'k'); hold on; grid on;
 plot(Tc,az_estimation,'m'); hold on;
 legend('Imu Down acceleration','estimated Down acceleration');
+xlabel('T[s]');
+ylabel('Down acceleration[m/s^2]');
 
 figure(7);
 plot(t_gps,VX,'k'); hold on; grid on;
 plot(Tc,vx_estimation,'m'); hold on;
 legend('North velocity','estimated North velocity');
+xlabel('T[s]');
+ylabel('North velocity[m/s]');
 
 figure(8);
 plot(t_gps,VY,'k'); hold on; grid on;
 plot(Tc,vy_estimation,'m'); hold on;
 legend('East velocity','estimated East velocity');
+xlabel('T[s]');
+ylabel('East velocity[m/s]');
 
 figure(9);
 plot(t_gps,VZ,'k'); hold on; grid on;
 plot(Tc,vz_estimation,'m'); hold on;
 legend('Down velocity','estimated Down velocity');
+xlabel('T[s]');
+ylabel('Down velocity[m/s]');
 
 % figure(4)
 % plot(Tc,position_complete(1,:)-x_estimation); grid on;
