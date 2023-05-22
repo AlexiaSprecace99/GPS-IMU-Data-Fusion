@@ -22,11 +22,11 @@ Ad_0 = 0;
 X_start = [Pn_0 Pe_0 Pd_0 Vn_0 Ve_0 Vd_0 An_0 Ae_0 Ad_0]';
 
 %Standard Deviation on the Initial State 
-std_dev_init = [1 1 1 0.1 0.1 0.1 0.01 0.01 0.01];
+std_dev_init = [0.5 0.5 0.5 0.1 0.1 0.1 0.01 0.01 0.01]';
 
 
 %Initial Estimate
-X_hat = X_start + (std_dev_init)*randn(size(X_start,1),1);
+X_hat = X_start + (std_dev_init).*randn(size(X_start,1),1);
 
 %Uncertainty matrix on the initial state
 P = diag(std_dev_init)^2; 
@@ -46,7 +46,7 @@ R_gps = blkdiag(std_dev_gps,std_dev_gps,std_dev_gps)^2; %Gps variance matrix
 R_imu = blkdiag(std_dev_imu,std_dev_imu,std_dev_imu)^2; %Imu variance matrix
 
 %Covariance Matrix of the process noise
-Q = [eye(3) zeros(3,3) zeros(3,3); zeros(3,3) eye(3) zeros(3,3);zeros(3,3) zeros(3,3) eye(3)];
+Q = [4*eye(3) zeros(3,3) zeros(3,3); zeros(3,3) 0.5*eye(3) zeros(3,3);zeros(3,3) zeros(3,3) 0.01*eye(3)];
 
 %Measure Matrix for GPS
 H_gps = [eye(3) zeros(3) zeros(3)];

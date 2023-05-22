@@ -1,13 +1,5 @@
 %In this Script there is an implementation of a Kalman Filter for GPS/IMU data fusion
 %in the standard form prediction/correction without the addition of contextual aspect
-
-%Measure
-pos = log_vars.trajectory_gen;
-vel = log_vars.velocity_gen;
-acc = log_vars.acceleration_gen;
-meas = [pos;vel;acc];
-rand_pos = 0.01*randn(3,1);
-rand_acc = 0.05*randn(3,1);
 Tc = 0:1/75:t_max;
 
 %Initialization of Matlab Function
@@ -22,17 +14,17 @@ flag = [0 0]';  % keeps track of the index of the most recent measurements alrea
 actual_meas = [0 0 0 0 0 0]';   %contains measures at current time
 
 log_EKF.x_hat(:,1) = X_hat;
-for t = 0:dt:t_max
+for t = 0:dt:t_max-1/75
     %prediction step
     [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,log_vars,k);
-    log_EKF.x_hat(:,k) = X_hat;
+    log_EKF.x_hat(:,k+1) = X_hat;
 
     %[actual_meas, selection_vector, flag] = getActualMeas(x,y,z,vx,vy,vz,ax,ay,az,flag,selection_vector, k, dt);
                                                        
  %getActualMeas returns sensor measures at each step. If the measure has already been used for correction, it is not taken
  %If the measurement does not arrive, then it is not corrected with that sensor.
     
-    [actual_meas, selection_vector, flag] = getActualMeas(ts,ta, flag, selection_vector, t,rand_pos,rand_acc);
+    [actual_meas, selection_vector, flag] = getActualMeas(ts,ta, flag, selection_vector, t);
     
     % correction step
     [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t);
@@ -53,138 +45,72 @@ end
 
 grid on;
 figure(1);
-plot(Tc,trajectory_gen(1,:),'r');hold on; grid on;
-plot(Tc,log_EKF.x_hat(1,:),'b'); 
-legend('gps North position','estimated North position');
-xlabel('T[s]');
-ylabel('North position[m]');
+%figure(2);
 
-figure(2);
-plot(Tc,trajectory_gen(2,:),'g'); hold on; grid on;
-plot(Tc,log_EKF.x_hat(2,:),'y');
-legend('gps East position','estimated East position');
-xlabel('T[s]');
-ylabel('East position[m]');
+plot(Tc,trajectory_gen(1,:),'c', LineWidth=4.5);hold on;
+plot(Tc,trajectory_gen(2,:),'g', LineWidth=4.5); hold on;  grid on;
+plot(Tc,trajectory_gen(3,:),'k', LineWidth=4.5); hold on;
+plot(Tc,log_EKF.x_hat(1,:),'b', LineWidth=1.5); hold on;  grid on;
+plot(Tc,log_EKF.x_hat(2,:),'r', LineWidth=1.5); hold on;
+plot(Tc,log_EKF.x_hat(3,:),'m',LineWidth=1.5); hold on; grid on;
+
+
+%legend('gps East position','estimated East position');
+
+
+%figure(3);
+
+
+legend('gps North position','gps East position', 'gps Down position','estimated North position','estimated East position','estimated Down position');
+xlabel('T[s]'); ylabel('Position[m]')
 
 figure(3);
-plot(Tc,trajectory_gen(3,:),'k'); hold on; grid on;
-plot(Tc,log_EKF.x_hat(3,:),'m'); hold on;
-legend('gps Down position','estimated Down position');
-xlabel('T[s]');
-ylabel('Down position[m]');
-
-figure(4);
-plot(Tc,acceleration_gen(1,:),'k'); hold on; grid on;
-plot(Tc,log_EKF.x_hat(7,:),'m'); hold on;
-legend('Imu North acceleration','estimated North acceleration');
-xlabel('T[s]');
-ylabel('North acceleration[m/s^2]');
-
-figure(5);
-plot(Tc,acceleration_gen(2,:),'k'); hold on; grid on;
-plot(Tc,log_EKF.x_hat(8,:),'m'); hold on;
-legend('Imu East acceleration','estimated East acceleration');
-xlabel('T[s]');
-ylabel('East acceleration[m/s^2]');
+plot(Tc,velocity_gen(1,:),'c', LineWidth=4.5);hold on;
+plot(Tc,log_EKF.x_hat(4,:),'b', LineWidth=1.5); hold on;  grid on;
+legend('gps North velocity','estimated North velocity')
+xlabel('T[s]'); ylabel('Velocity[m/s]')
+figure(4)
+plot(Tc,velocity_gen(2,:),'g', LineWidth=4.5); hold on;  grid on;
+plot(Tc,log_EKF.x_hat(5,:),'r', LineWidth=1.5); hold on;
+xlabel('T[s]'); ylabel('Velocity[m/s]')
+legend('gps East velocity','estimated East velocity')
+figure(5)
+plot(Tc,velocity_gen(3,:),'k', LineWidth=4.5); hold on;
+plot(Tc,log_EKF.x_hat(6,:),'m',LineWidth=1.5); hold on; grid on;
+legend('gps Down velocity','estimated Down velocity');
+xlabel('T[s]'); ylabel('Velocity[m/s]')
 
 figure(6);
-plot(Tc,acceleration_gen(3,:),'k'); hold on; grid on;
-plot(Tc,log_EKF.x_hat(9,:),'m'); hold on;
-legend('Imu Down acceleration','estimated Down acceleration');
-xlabel('T[s]');
-ylabel('Down acceleration[m/s^2]');
-
+plot(Tc,acceleration_gen(1,:),'c', LineWidth=4.5);hold on;
+plot(Tc,log_EKF.x_hat(7,:),'b', LineWidth=1.5); hold on;  grid on;
+legend('gps North acceleration','estimated North acceleration')
+xlabel('T[s]'); ylabel('Acceleration[m/s^{2}]')
 figure(7);
-plot(Tc,velocity_gen(1,:),'k'); hold on; grid on;
-plot(Tc,log_EKF.x_hat(4,:),'m'); hold on;
-legend('North velocity','estimated North velocity');
-xlabel('T[s]');
-ylabel('North velocity[m/s]');
-
+plot(Tc,acceleration_gen(2,:),'c', LineWidth=4.5);hold on;
+plot(Tc,log_EKF.x_hat(8,:),'r', LineWidth=1.5); hold on;
+legend('gps East acceleration','estimated East acceleration')
+xlabel('T[s]'); ylabel('Acceleration[m/s^{2}]')
 figure(8);
-plot(Tc,velocity_gen(2,:),'k'); hold on; grid on;
-plot(Tc,log_EKF.x_hat(5,:),'m'); hold on;
-legend('East velocity','estimated East velocity');
-xlabel('T[s]');
-ylabel('East velocity[m/s]');
+plot(Tc,acceleration_gen(3,:),'k', LineWidth=4.5); hold on;
+plot(Tc,log_EKF.x_hat(9,:),'m',LineWidth=1.5); hold on; grid on;
+legend('gps Down acceleration','estimated Down acceleration')
+xlabel('T[s]'); ylabel('Acceleration[m/s^{2}]')
 
-figure(9);
-plot(Tc,velocity_gen(3,:),'k'); hold on; grid on;
-plot(Tc,log_EKF.x_hat(6,:),'m'); hold on;
-legend('Down velocity','estimated Down velocity');
-xlabel('T[s]');
-ylabel('Down velocity[m/s]');
-% grid on;
-% figure(1);
-% plot3(trajectory_gen(1,:),trajectory_gen(2,:),trajectory_gen(3,:),'r');
-% hold on; 
-% plot3(log_EKF.x_hat(1,:),log_EKF.x_hat(2,:),log_EKF.x_hat(3,:),'b');
-% xlabel('x[m]');
-% ylabel('y[m]');
-% zlabel('z[m]');
-% 
-% grid on;
-% figure(2); 
-% plot(Tc,error_x);
-% legend('North position error');
-% xlabel('T[s]');
-% ylabel('North position error[m]');
-% 
-% grid on;
-% figure(3); 
-% plot(Tc,error_y);
-% legend('East position error');
-% xlabel('T[s]');
-% ylabel('East position error[m]');
-% 
-% grid on;
-% figure(4); grid on;
-% plot(Tc,error_z); grid on;
-% legend('Down position error');
-% xlabel('T[s]');
-% ylabel('Down position error[m]');
-% 
-% grid on;
-% figure(5); grid on;
-% plot(Tc,error_vx); grid on;
-% legend('North velocity error');
-% xlabel('T[s]');
-% ylabel('North velocity error[m/s]');
-% 
-% grid on;
-% figure(6); grid on;
-% plot(Tc,error_vy); grid on;
-% legend('East velocity error');
-% xlabel('T[s]');
-% ylabel('East velocity error[m/s]');
-% 
-% grid on;
-% figure(7); grid on;
-% plot(Tc,error_vz); grid on;
-% legend('Down velocity error');
-% xlabel('T[s]');
-% ylabel('Down velocity error[m/s]');
-% 
-% grid on;
-% figure(8); grid on;
-% plot(Tc,error_ax); grid on;
-% legend('North acceleration error');
-% xlabel('T[s]');
-% ylabel('North acceleration error[m/s^2]');
-% 
-% grid on;
-% figure(9); grid on;
-% plot(Tc,error_ay); grid on;
-% legend('East acceleration error');
-% xlabel('T[s]');
-% ylabel('East acceleration error[m/s^2]');
-% 
-% grid on;
-% figure(10); grid on;
-% plot(Tc,error_az); grid on;
-% legend('Down acceleration error');
-% xlabel('T[s]');
-% ylabel('Down acceleration error[m/s^2]');
+grid on;
+figure(9); 
+plot(Tc,trajectory_gen(1,:)-log_EKF.x_hat(1,:),'c'); grid on;
+legend('North position error');
+xlabel('T[s]'); ylabel('Error position [m]');
+
+figure(10); grid on;
+plot(Tc,trajectory_gen(2,:)-log_EKF.x_hat(2,:),'c');grid on;
+legend('East position error');
+xlabel('T[s]'); ylabel('Error position [m]');
+
+figure(11); grid on;
+plot(Tc,trajectory_gen(3,:)-log_EKF.x_hat(3,:),'c');grid on;
+legend('Down position error');
+xlabel('T[s]'); ylabel('Error position [m]');
 
 %Prediction step: it been used acceleration measures from IMU
 function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,log_vars,k)
@@ -227,10 +153,10 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
     else
         if(count_size_meas > 0)
             selection_vector(2) = true;    % available measure
-            actual_meas = [actual_meas;ts.data(:,flag(2))]+[0.1*rand(3,1);0.05*rand(3,1)];    % % measure saving in actual_meas
+            actual_meas = [actual_meas;ts.data(:,flag(2))]+[0.1*rand(3,1);0.01*rand(3,1)];    % % measure saving in actual_meas
         else
             selection_vector(2) = true;    % available measure
-            actual_meas = ts.data(:,flag(2))+0.05*rand(3,1);   % measure saving in actual_meas 
+            actual_meas = ts.data(:,flag(2))+0.01*rand(3,1);   % measure saving in actual_meas 
         end
     end
 end
