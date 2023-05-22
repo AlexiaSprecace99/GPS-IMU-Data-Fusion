@@ -1,0 +1,22 @@
+This text document presents all matlab scripts and the order in which to execute them.
+
+Simulated Data:
+Trajectory creation -> first to execute. It creates the trajectory to use in Kalman filter.
+To execute independently ->
+KF -> script for Kalman filter.
+KF_classical_logic -> script for Kalman filter with classical logic. 
+KF_fuzzy_logic -> script for Kalman filter with fuzzy logic.
+
+get_mf_valid -> creates membership function for fuzzy logic.
+
+Real Data:
+Initialization -> first to execute. Contains all variable for Kalman filter.
+To execute independently ->
+KF -> script for Kalman filter.
+KF_classical_logic -> script for Kalman filter with classical logic. 
+KF_fuzzy_logic -> script for Kalman filter with fuzzy logic.
+
+
+
+
+
