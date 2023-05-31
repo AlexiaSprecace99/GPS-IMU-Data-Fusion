@@ -17,9 +17,9 @@ log_EKF = [];
 
 %Variable initialization for correction when there are different time sampling
 
-selection_vector = [false false false]';  % measurement selection at current iteration
-flag = [0 0 0]';  % keeps track of the index of the most recent measurements already used for each sensor
-actual_meas = [0 0 0 0 0 0 0 0 0]';   %contains measures at current time
+selection_vector = [false false]';  % measurement selection at current iteration
+flag = [0 0]';  % keeps track of the index of the most recent measurements already used for each sensor
+actual_meas = [0 0 0 0 0 0]';   %contains measures at current time
 
 log_EKF.x_hat(:,1) = X_hat;
 for t = dt:dt:t_max
@@ -32,7 +32,7 @@ for t = dt:dt:t_max
  %getActualMeas returns sensor measures at each step. If the measure has already been used for correction, it is not taken
  %If the measurement does not arrive, then it is not corrected with that sensor.
     
-    [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv, flag, selection_vector, t);
+    [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selection_vector, t);
     
     % correction step
     [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t);
@@ -117,7 +117,7 @@ X_hat = F*X_hat;
 P = F*P*F'+Q;
 end
 
-function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv,flag, selection_vector,t)
+function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selection_vector,t)
     count = 0;
     actual_meas = [];
     count_size_meas = 0;
@@ -133,7 +133,7 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv,flag, se
         count_size_meas = count_size_meas + 1;
         selection_vector(1) = true;     % available measure
         actual_meas = ta.data(:,flag(1));    % measure saving in actual_meas
-        actual_meas = [actual_meas;tv.data(:,flag(1))];
+        %actual_meas = [actual_meas;tv.data(:,flag(1))];
 %         if t == 5 || t == 10 || t == 15 || t == 20 || t == 25 || t == 100 || t == 110 || t == 115 
 %             actual_meas = actual_meas+10*rand(size(actual_meas));
 %         end
@@ -142,19 +142,19 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv,flag, se
 
     %for imu
     count= 0;
-    while(((flag(3)) < size(ts.data,3)) && (ts.time(flag(3)+1) <= t))
+    while(((flag(2)) < size(ts.data,3)) && (ts.time(flag(2)+1) <= t))
         count = count + 1;
-        flag(3) = flag(3) + 1;
+        flag(2) = flag(2) + 1;
     end
     if(count == 0)
-        selection_vector(3) = false;    % there isn't available measure
+        selection_vector(2) = false;    % there isn't available measure
     else
         if(count_size_meas > 0)
-            selection_vector(3) = true;    % available measure
-            actual_meas = [actual_meas;ts.data(:,flag(3))];    % % measure saving in actual_meas
+            selection_vector(2) = true;    % available measure
+            actual_meas = [actual_meas;ts.data(:,flag(2))];    % % measure saving in actual_meas
         else
-            selection_vector(3) = true;    % available measure
-            actual_meas = ts.data(:,flag(3));   % measure saving in actual_meas 
+            selection_vector(2) = true;    % available measure
+            actual_meas = ts.data(:,flag(2));   % measure saving in actual_meas 
         end
     end
 end
@@ -164,16 +164,16 @@ end
 function [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t)
     counter = 0;
     if selection_vector(1) == false  %if there aren't any information of position
-        H(1:6,:) = [];
-        R(1:6,:) = [];
-        R(:,1:6) = [];
-        counter = counter+6;
+        H(1:3,:) = [];
+        R(1:3,:) = [];
+        R(:,1:3) = [];
+        counter = counter+3;
     end
 
-    if selection_vector(3) == false  %if there aren't any information of acceleration
-        H(7-counter:9-counter,:) = [];
-        R(7-counter:9-counter,:) = [];
-        R(:,7-counter:9-counter) = [];
+    if selection_vector(2) == false  %if there aren't any information of acceleration
+        H(4-counter:6-counter,:) = [];
+        R(4-counter:6-counter,:) = [];
+        R(:,4-counter:6-counter) = [];
     end
 
     

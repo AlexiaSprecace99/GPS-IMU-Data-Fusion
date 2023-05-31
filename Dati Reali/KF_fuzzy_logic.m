@@ -14,9 +14,9 @@ Tc = 0:0.02:t_max;
 f = matlabFunction(F);
 k = 1;
 log_EKF = [];
-selection_vector = [false false false]';  
-flag = [0 0 0]'; 
-actual_meas = [0 0 0 0 0 0 0 0 0]'; 
+selection_vector = [false false]';  
+flag = [0 0]'; 
+actual_meas = [0 0 0 0 0 0]'; 
 count = 0;
 n= 100;
 log_EKF.x_hat(:,1) = X_hat;
@@ -26,7 +26,7 @@ for t = 0:dt:t_max
     log_EKF.x_hat(:,k) = X_hat;
    
     
-    [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv, flag, selection_vector,t);
+    [actual_meas, selection_vector, flag] = getActualMeas(ts,ta, flag, selection_vector,t);
     % correction step
     [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t,k);
 
@@ -105,7 +105,7 @@ X_hat = F*X_hat;
 P = F*P*F'+Q;
 end
 
-function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv,flag, selection_vector,t)
+function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selection_vector,t)
     count = 0;
     actual_meas = [];
     count_size_meas = 0;
@@ -113,18 +113,15 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv,flag, se
     while(((flag(1)) < size(ta.data,3)) && ta.time(flag(1)+1)-t <= eps)
         count = count + 1;
         flag(1) = flag(1) + 1;
-        flag(2) = flag(2) + 1;
     end
     count_size_meas = 0;
     if(count == 0)
       selection_vector(1) = false;
-      selection_vector(2) = false; 
     else
         count_size_meas = count_size_meas + 1;
         selection_vector(1) = true;
-        selection_vector(2) = true;
         actual_meas = ta.data(:,flag(1)); 
-        actual_meas = [actual_meas;tv.data(:,flag(2))];
+        %actual_meas = [actual_meas;tv.data(:,flag(2))];
 %         if t == 5 || t == 10 || t == 15 || t == 20 || t == 25 || t == 100 || t == 110 || t == 115 
 %             actual_meas = actual_meas+10*rand(size(actual_meas));
 %         end
@@ -133,19 +130,19 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv,flag, se
 
     %for imu
     count= 0;
-    while(((flag(3)) < size(ts.data,3)) && ts.time(flag(3)+1)-t <= eps)
+    while(((flag(2)) < size(ts.data,3)) && ts.time(flag(2)+1)-t <= eps)
         count = count + 1;
-        flag(3) = flag(3) + 1;
+        flag(2) = flag(2) + 1;
     end
     if(count == 0)
-        selection_vector(3) = false;  
+        selection_vector(2) = false;  
     else
         if(count_size_meas > 0)
-            selection_vector(3) = true;  
-            actual_meas = [actual_meas;ts.data(:,flag(3))];  
+            selection_vector(2) = true;  
+            actual_meas = [actual_meas;ts.data(:,flag(2))];  
         else
-            selection_vector(3) = true;    
-            actual_meas = ts.data(:,flag(3));    
+            selection_vector(2) = true;    
+            actual_meas = ts.data(:,flag(2));    
         end
     end
 end
@@ -155,24 +152,24 @@ end
 function [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t,k)
     counter = 0;
     if selection_vector(1) == false 
-        H(1:6,:) = [];
-        R(1:6,:) = [];
-        R(:,1:6) = [];
-        counter = counter+6;
+        H(1:3,:) = [];
+        R(1:3,:) = [];
+        R(:,1:3) = [];
+        counter = counter+3;
     end
-    if selection_vector(3) == false  
-        H(7-counter:9-counter,:) = [];
-        R(7-counter:9-counter,:) = [];
-        R(:,7-counter:9-counter) = [];
+    if selection_vector(2) == false  
+        H(4-counter:6-counter,:) = [];
+        R(4-counter:6-counter,:) = [];
+        R(:,4-counter:6-counter) = [];
     end
 
-if (selection_vector(1) == true && selection_vector(3) == true)
+if (selection_vector(1) == true && selection_vector(2) == true)
     S = R+H*P*H';
-    S_gps = S(1:6,1:6);
-    S_imu = S(7:9,7:9);
+    S_gps = S(1:3,1:3);
+    S_imu = S(4:6,4:6);
     innovation = actual_meas-H*X_hat;
-    innovation_gps = innovation(1:6);
-    innovation_imu = innovation(7:9);
+    innovation_gps = innovation(1:3);
+    innovation_imu = innovation(4:6);
     q_gps = innovation_gps'*inv(S_gps)*innovation_gps;
     q_imu = innovation_imu'*inv(S_imu)*innovation_imu;
 
@@ -189,9 +186,9 @@ if (selection_vector(1) == true && selection_vector(3) == true)
     beta_gps_imu = mu_gps_imu;
     beta0= 1-mu_gps-mu_imu+mu_gps_imu;
     if(q_gps > 7.8 && q_imu < 7.8) %only Imu measure
-        H(1:6,:) = []; %3x9
-        R(1:6,:) = [];
-        R(:,1:6) = []; %3x3
+        H(1:3,:) = []; %3x9
+        R(1:3,:) = [];
+        R(:,1:3) = []; %3x3
         L = P*H'*inv(S_imu); %9x6
         X_hat_imu = X_hat + L*innovation_imu; % x_imu(k|k)
         X_hat = beta0*X_hat + beta_imu*X_hat_imu;
@@ -199,9 +196,9 @@ if (selection_vector(1) == true && selection_vector(3) == true)
         P = beta0*P + beta_imu*(P_imu+(X_hat-X_hat_imu)*(X_hat-X_hat_imu)');
     end
     if (q_gps < 7.8 && q_imu > 7.8) %only Gps measure
-        H(7:9,:) = []; %3x9
-        R(7:9,:) = [];
-        R(:,7:9) = []; %3x3
+        H(4:6,:) = []; %3x9
+        R(4:6,:) = [];
+        R(:,4:6) = []; %3x3
         L = P*H'*inv(S_gps); %9x6
         X_hat_gps = X_hat + L*innovation_gps; % x_gps(k|k)
         X_hat = beta0*X_hat + beta_gps*X_hat_gps;
@@ -223,7 +220,7 @@ if (selection_vector(1) == true && selection_vector(3) == true)
 
 end
 
-if (selection_vector(1) == false && selection_vector(3) == true) %just acceleration information
+if (selection_vector(1) == false && selection_vector(2) == true) %just acceleration information
     S_imu = R+H*P*H';
     innovation_imu = actual_meas-H*X_hat;
     q_imu = innovation_imu'*inv(S_imu)*innovation_imu;

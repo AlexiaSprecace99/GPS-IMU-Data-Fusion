@@ -39,21 +39,21 @@ F = [eye(3) T*eye(3) (T^2)*eye(3)/2; zeros(3) eye(3) T*eye(3); zeros(3) zeros(3)
 %acceleration)
 dt_gps = 0.1; %Sampling Time for the Gps sensor
 dt_imu = 1/50; %Sampling Time for the IMU
-std_dev_pos = 2; %Standard Deviation for the GPS
-std_dev_vel = 0.1; %Standard Deviation for GPS velocity
-std_dev_imu = 0.1; %Standard Deviation for the IMU
+std_dev_pos = 1; %Standard Deviation for the GPS
+%std_dev_vel = 0.1; %Standard Deviation for GPS velocity
+std_dev_imu = 0.01; %Standard Deviation for the IMU
 R_pos = blkdiag(std_dev_pos,std_dev_pos,std_dev_pos)^2; %Position variance matrix 
-R_vel = blkdiag(std_dev_vel,std_dev_vel,std_dev_vel)^2; %Velocity variance matrix
+%R_vel = blkdiag(std_dev_vel,std_dev_vel,std_dev_vel)^2; %Velocity variance matrix
 R_imu = blkdiag(std_dev_imu,std_dev_imu,std_dev_imu)^2; %Imu variance matrix
 
 %Covariance Matrix of the process noise
-Q = [4*eye(3) zeros(3,3) zeros(3,3); zeros(3,3) 0.5*eye(3) zeros(3,3);zeros(3,3) zeros(3,3) 0.01*eye(3)];
+Q = [1*eye(3) zeros(3,3) zeros(3,3); zeros(3,3) 10^-2*eye(3) zeros(3,3);zeros(3,3) zeros(3,3) 0.01^2*eye(3)];
 
 %Measure Matrix for position GPS
 H_gps = [eye(3) zeros(3) zeros(3)];
 
 %Measure matrix for velocity GPS
-H_vel = [zeros(3) eye(3) zeros(3)];
+%H_vel = [zeros(3) eye(3) zeros(3)];
 
 %Measure matrix for IMU
 H_imu = [zeros(3) zeros(3) eye(3)];
@@ -62,10 +62,10 @@ H_imu = [zeros(3) zeros(3) eye(3)];
 t_max = 250.12;
 
 %Measure matrix 
-H = [eye(3) zeros(3) zeros(3);zeros(3) eye(3) zeros(3);zeros(3) zeros(3) eye(3)];
+H = [eye(3) zeros(3) zeros(3);zeros(3) zeros(3) eye(3)];
 
 %Covariance matrix for sensor noise
-R = blkdiag(R_pos,R_vel,R_imu);
+R = blkdiag(R_pos,R_imu);
 
 load('LOG00054_parsed_seg3.mat');
 load('tgps.mat');
