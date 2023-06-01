@@ -54,16 +54,20 @@ end
 [vy_estimation] = [log_EKF.x_hat(5,:)];
 [vz_estimation] = [log_EKF.x_hat(6,:)];
 
+cutOffFreq = 1; % Frequenza di taglio del filtro (in Hz)
+samplingFreq = 50; % Frequenza di campionamento (in Hz)
+[b, a] = butter(2, cutOffFreq / (samplingFreq / 2), 'low');
 grid on;
 figure(1);
 %figure(2);
+%z_estimation = filter(b, a, z_estimation);
 
-plot(t_gps,GPS(1,:),'c', LineWidth=4.5);hold on;
-plot(t_gps,GPS(2,:),'g', LineWidth=4.5); hold on;  grid on;
-plot(t_gps,GPS(3,:),'k', LineWidth=4.5); hold on;
-plot(Tc,x_estimation,'b', LineWidth=1.5); hold on;  grid on;
-plot(Tc,y_estimation,'r', LineWidth=1.5); hold on;
-plot(Tc,z_estimation,'m',LineWidth=1.5); hold on; grid on;
+plot(t_gps,GPS(1,:),'c');hold on;
+plot(t_gps,GPS(2,:),'g'); hold on;  grid on;
+plot(t_gps,GPS(3,:),'k'); hold on;
+plot(Tc,x_estimation,'b'); hold on;  grid on;
+plot(Tc,y_estimation,'r'); hold on;
+plot(Tc,z_estimation,'m'); hold on; grid on;
 
 
 
@@ -76,19 +80,34 @@ plot(Tc,z_estimation,'m',LineWidth=1.5); hold on; grid on;
 legend('gps North position','gps East position', 'gps Down position','estimated North position','estimated East position','estimated Down position');
 xlabel('T[s]'); ylabel('Position[m]')
 
+
+delta_posizione_x = diff(x_estimation);
+velocita_x = [delta_posizione_x./dt delta_posizione_x(end)/dt];
+velocita_x = filter(b, a, velocita_x);
+
+
+delta_posizione_y = diff(y_estimation);
+velocita_y = [delta_posizione_y./dt delta_posizione_y(end)/dt];
+velocita_y = filter(b, a, velocita_y);
+
+
+delta_posizione_z = diff(z_estimation);
+velocita_z = [delta_posizione_z./dt delta_posizione_z(end)/dt];
+velocita_z = filter(b, a, velocita_z);
+
 figure(3);
-plot(t_gps,VX,'c', LineWidth=4.5);hold on;
-plot(Tc,vx_estimation,'b', LineWidth=1.5); hold on;  grid on;
+plot(Tc,velocita_x,'c');hold on;
+plot(Tc,vx_estimation,'b'); hold on;  grid on;
 legend('gps North velocity','estimated North velocity')
 xlabel('T[s]'); ylabel('Velocity[m/s]')
 figure(4)
-plot(t_gps,VY,'g', LineWidth=4.5); hold on;  grid on;
-plot(Tc,vy_estimation,'r', LineWidth=1.5); hold on;
+plot(Tc,velocita_y,'g'); hold on;  grid on;
+plot(Tc,vy_estimation,'r'); hold on;
 xlabel('T[s]'); ylabel('Velocity[m/s]')
 legend('gps East velocity','estimated East velocity')
 figure(5)
-plot(t_gps,VZ,'k', LineWidth=4.5); hold on;
-plot(Tc,vz_estimation,'m',LineWidth=1.5); hold on; grid on;
+plot(Tc,velocita_z,'k'); hold on;
+plot(Tc,vz_estimation,'m'); hold on; grid on;
 legend('gps Down velocity','estimated Down velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]')
 
@@ -108,6 +127,18 @@ plot(Tc,az_estimation,'m',LineWidth=1.5); hold on; grid on;
 legend('gps Down acceleration','estimated Down acceleration')
 xlabel('T[s]'); ylabel('Acceleration[m/s^{2}]')
 
+figure(9)
+plot(DATA(12290:24577,[7]+19),'b');hold on
+plot(z_estimation);
+
+figure(10)
+plot(DATA(12290:24577,[1]+19),'b');hold on
+plot(x_estimation);
+
+figure(11)
+plot(DATA(12290:24577,[4]+19),'b');hold on
+plot(y_estimation);
+
 
 %Prediction step: it been used acceleration measures from IMU
 function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,Imu)
@@ -122,43 +153,41 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
     actual_meas = [];
     count_size_meas = 0;
     %for gps
-    while(((flag(1)) < size(ta.data,3)) && (ta.time(flag(1)+1) <= t))
+    while(((flag(1)) < size(ta.data,3)) && ta.time(flag(1)+1)-t <= eps)
         count = count + 1;
         flag(1) = flag(1) + 1;
     end
     count_size_meas = 0;
     if(count == 0)
-        selection_vector(1) = false;    % there isn't available measure
+      selection_vector(1) = false;    
     else
         count_size_meas = count_size_meas + 1;
-        selection_vector(1) = true;     % available measure
-        actual_meas = ta.data(:,flag(1));    % measure saving in actual_meas
-        %actual_meas = [actual_meas;tv.data(:,flag(1))];
-%         if t == 5 || t == 10 || t == 15 || t == 20 || t == 25 || t == 100 || t == 110 || t == 115 
-%             actual_meas = actual_meas+10*rand(size(actual_meas));
-%         end
+        selection_vector(1) = true;     
+        actual_meas = ta.data(:,flag(1));
+%         if t == 5 || t == 10 || t == 15 || t == 20 || t == 25 || t == 100 || t == 110 || t == 115
+%             actual_meas = actual_meas+30*rand(size(actual_meas));
+%         end     
     end
 
 
     %for imu
     count= 0;
-    while(((flag(2)) < size(ts.data,3)) && (ts.time(flag(2)+1) <= t))
+    while(((flag(2)) < size(ts.data,3)) && ts.time(flag(2)+1)-t <= eps)
         count = count + 1;
         flag(2) = flag(2) + 1;
     end
     if(count == 0)
-        selection_vector(2) = false;    % there isn't available measure
+        selection_vector(2) = false;    
     else
         if(count_size_meas > 0)
-            selection_vector(2) = true;    % available measure
-            actual_meas = [actual_meas;ts.data(:,flag(2))];    % % measure saving in actual_meas
+            selection_vector(2) = true;    
+            actual_meas = [actual_meas;ts.data(:,flag(2))];    
         else
-            selection_vector(2) = true;    % available measure
-            actual_meas = ts.data(:,flag(2));   % measure saving in actual_meas 
+            selection_vector(2) = true;    
+            actual_meas = ts.data(:,flag(2));     
         end
     end
 end
-
 %Correction step: after seen which measures are available 
 
 function [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t)
