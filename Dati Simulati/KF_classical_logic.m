@@ -13,6 +13,7 @@ Tc = 0:1/75:t_max;
 %Initialization of Matlab Function
 f = matlabFunction(F);
 k = 1;
+i = 1;
 log_EKF = [];
 selection_vector = [false false]';  
 flag = [0 0]'; 
@@ -22,8 +23,8 @@ n= 100;
 log_EKF.x_hat(:,1) = X_hat;
 for t = 0:dt:t_max
 
-    rand_pos = 0.01*randn(3,1);
-    rand_acc = 0.01*randn(3,1);
+    rand_pos = 1*randn(3,1);
+    rand_acc = 0.001*randn(3,1);
     %prediction step
     [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,log_vars,k,rand_acc);
     log_EKF.x_hat(:,k) = X_hat;
@@ -55,51 +56,64 @@ for t = 0:dt:t_max
 
     k = k + 1;
 end
+
+pos_gps_interp_x = interp1(linspace(0, 1, size(vera_pos,2)), vera_pos(1,:), linspace(0, 1, size(trajectory_gen,2)));
+pos_gps_interp_y = interp1(linspace(0, 1, size(vera_pos,2)), vera_pos(2,:), linspace(0, 1, size(trajectory_gen,2)));
+pos_gps_interp_z = interp1(linspace(0, 1, size(vera_pos,2)), vera_pos(3,:), linspace(0, 1, size(trajectory_gen,2)));
+pos_gps_interp = [pos_gps_interp_x;pos_gps_interp_y;pos_gps_interp_z];
+
 grid on;
 
 figure(1);
-plot(Tc,trajectory_gen(1,:),'c', LineWidth=4.5);hold on;
-plot(Tc,trajectory_gen(2,:),'g', LineWidth=4.5); hold on;  grid on;
-plot(Tc,trajectory_gen(3,:),'k', LineWidth=4.5); hold on;
-plot(Tc,log_EKF.x_hat(1,:),'b', LineWidth=1.5); hold on;  grid on;
-plot(Tc,log_EKF.x_hat(2,:),'r', LineWidth=1.5); hold on;
-plot(Tc,log_EKF.x_hat(3,:),'m',LineWidth=1.5); hold on; grid on;
-legend('gps North position','gps East position', 'gps Down position','estimated North position','estimated East position','estimated Down position');
-xlabel('T[s]'); ylabel('Position[m]')
+plot(Tc,trajectory_gen(1,:),'r');hold on;
+plot(Tc,pos_gps_interp_x,'c');hold on;
+% plot(Tc,trajectory_gen(2,:),'g', LineWidth=4.5); hold on;  grid on;
+% plot(Tc,trajectory_gen(3,:),'k', LineWidth=4.5); hold on;
+plot(Tc,log_EKF.x_hat(1,:),'b'); hold on;  grid on;
+% plot(Tc,log_EKF.x_hat(2,:),'r', LineWidth=1.5); hold on;
+% plot(Tc,log_EKF.x_hat(3,:),'m',LineWidth=1.5); hold on; grid on;
+% legend('gps North position','gps East position', 'gps Down position','estimated North position','estimated East position','estimated Down position');
+legend('x vera','x rumorosa','x stimata');
+xlabel('T[s]'); ylabel('Position[m]');
+figure(2)
+plot(Tc,trajectory_gen(1,:)-pos_gps_interp_x,'r'); hold on; grid on; 
+plot(Tc,trajectory_gen(1,:)-log_EKF.x_hat(1,:),'b');hold on; grid on; 
+legend('error between real and measured trajectory','error between real and estimated trajectory');
 
- 
 figure(3);
-plot(Tc,velocity_gen(1,:),'c', LineWidth=4.5);hold on;
-plot(Tc,log_EKF.x_hat(4,:),'b', LineWidth=1.5); hold on;  grid on;
-legend('gps North velocity','estimated North velocity')
+plot(Tc,velocity_gen(1,:),'c', LineWidth=1);hold on;
+plot(Tc,log_EKF.x_hat(4,:),'b', LineWidth=1); hold on;  grid on;
+legend('Real North velocity','estimated North velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]')
 figure(4)
-plot(Tc,velocity_gen(2,:),'g', LineWidth=4.5); hold on;  grid on;
-plot(Tc,log_EKF.x_hat(5,:),'r', LineWidth=1.5); hold on;
+plot(Tc,velocity_gen(2,:),'g', LineWidth=1); hold on;  grid on;
+plot(Tc,log_EKF.x_hat(5,:),'r', LineWidth=1); hold on;
 xlabel('T[s]'); ylabel('Velocity[m/s]')
-legend('gps East velocity','estimated East velocity')
+legend('Real East velocity','estimated East velocity')
 
 figure(5)
-plot(Tc,velocity_gen(3,:),'k', LineWidth=4.5); hold on;
-plot(Tc,log_EKF.x_hat(6,:),'m',LineWidth=1.5); hold on; grid on;
-legend('gps Down velocity','estimated Down velocity');
+plot(Tc,velocity_gen(3,:),'k', LineWidth=1); hold on;
+plot(Tc,log_EKF.x_hat(6,:),'m',LineWidth=1); hold on; grid on;
+legend('Real Down velocity','estimated Down velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]')
 
 figure(6);
-plot(Tc,acceleration_gen(1,:),'c', LineWidth=4.5);hold on;
-plot(Tc,log_EKF.x_hat(7,:),'b', LineWidth=1.5); hold on;  grid on;
-legend('gps North acceleration','estimated North acceleration')
+plot(Tc,acceleration_gen(1,:),'c', LineWidth=1.5);hold on;
+plot(Tc,log_EKF.x_hat(7,:),'b', LineWidth=1); hold on;  grid on;
+plot(Tc,vera_acc(1,:),'b', LineWidth=1); hold on;  grid on;
+legend('Real North acceleration','estimated North acceleration','measured North acceleration');
 xlabel('T[s]'); ylabel('Acceleration[m/s^{2}]')
 figure(7);
-plot(Tc,acceleration_gen(2,:),'c', LineWidth=4.5);hold on;
-plot(Tc,log_EKF.x_hat(8,:),'r', LineWidth=1.5); hold on; grid on;
-
-legend('gps East acceleration','estimated East acceleration')
+plot(Tc,acceleration_gen(2,:),'c', LineWidth=1.5);hold on;
+plot(Tc,log_EKF.x_hat(8,:),'r', LineWidth=1); hold on; grid on;
+plot(Tc,vera_acc(2,:),'b', LineWidth=1); hold on;  grid on;
+legend('Real East acceleration','estimated East acceleration','measured East acceleration');
 xlabel('T[s]'); ylabel('Acceleration[m/s^{2}]')
 figure(8);
-plot(Tc,acceleration_gen(3,:),'k', LineWidth=4.5); hold on;
-plot(Tc,log_EKF.x_hat(9,:),'m',LineWidth=1.5); hold on; grid on;
-legend('gps Down acceleration','estimated Down acceleration')
+plot(Tc,acceleration_gen(3,:),'k', LineWidth=1.5); hold on;
+plot(Tc,log_EKF.x_hat(9,:),'m',LineWidth=1); hold on; grid on;
+plot(Tc,vera_acc(3,:),'b', LineWidth=1); hold on;  grid on;
+legend('Real Down acceleration','estimated Down acceleration','measured Down acceleration');
 xlabel('T[s]'); ylabel('Acceleration[m/s^{2}]')
 
  
@@ -120,6 +134,20 @@ plot(Tc,error_z,'c');grid on;
 legend('Down position error');
 xlabel('T[s]'); ylabel('Error position [m]');
 
+figure(12);
+plot(Tc,trajectory_gen(2,:),'r');hold on;
+plot(Tc,pos_gps_interp_y,'c');hold on;
+plot(Tc,log_EKF.x_hat(2,:),'b'); hold on;  grid on;
+legend('y vera','y rumorosa','y stimata');
+xlabel('T[s]'); ylabel('Position[m]');
+
+
+figure(13);
+plot(Tc,trajectory_gen(3,:),'r');hold on;
+plot(Tc,pos_gps_interp_z,'c');hold on;
+plot(Tc,log_EKF.x_hat(3,:),'b'); hold on;  grid on;
+legend('z vera','z rumorosa','z stimata');
+xlabel('T[s]'); ylabel('Position[m]');
 
 
 function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,log_vars,k,rand_acc)

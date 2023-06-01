@@ -45,7 +45,7 @@ R_gps = blkdiag(std_dev_gps,std_dev_gps,std_dev_gps)^2; %Gps variance matrix
 R_imu = blkdiag(std_dev_imu,std_dev_imu,std_dev_imu)^2; %Imu variance matrix
 
 %Covariance Matrix of the process noise
-Q = [10^-3*eye(3) zeros(3,3) zeros(3,3); zeros(3,3) 10^-5*eye(3) zeros(3,3);zeros(3,3) zeros(3,3) 1*eye(3)];
+Q = [10^-3*eye(3) zeros(3,3) zeros(3,3); zeros(3,3) 10^-5*eye(3) zeros(3,3);zeros(3,3) zeros(3,3) 0.1*eye(3)];
 
 %Measure Matrix for GPS
 H_gps = [eye(3) zeros(3) zeros(3)];

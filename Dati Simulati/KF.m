@@ -25,7 +25,7 @@ i = 1;
 for t = 0:dt:t_max
     %prediction step
     
-    rand_pos = 0.1*randn(3,1);
+    rand_pos = 1*randn(3,1);
     rand_acc = 0.001*randn(3,1);
 
     [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,acceleration_gen,k,rand_acc);

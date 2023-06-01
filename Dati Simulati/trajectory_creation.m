@@ -15,8 +15,10 @@ x_start=[1 1 1]'; %Starting position
 v_start=[0 0 0]'; %Starting velocity
 a_start=[0 0 0]'; %Starting acceleration
 
-x_end=[100 45 20]'; %Final position
-v_end=[1 5 0]'; %Final velocity
+%x_end=[100 45 20]'; %Final position
+%v_end=[1 5 0]'; %Final velocity
+x_end=[350 100 50]'; %Final position
+v_end=[10 20 -5]'; %Final velocity
 a_end=[0 0 0]'; %Final acceleration
 
 A=[te^3 te^4 te^5;
