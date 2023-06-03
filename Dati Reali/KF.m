@@ -6,10 +6,12 @@
 % vel = log_vars.velocity_gen;
 % acc = log_vars.acceleration_gen;
 % meas = [pos;vel;acc];
+initialization 
 rand_pos = 0.01*randn(3,1);
 rand_acc = 0.05*randn(3,1);
 Tc = 0:0.02:t_max;
-
+Td = 0:0.02:245.74;
+Td = Td*(max(Tc)/max(Td));
 %Initialization of Matlab Function
 f = matlabFunction(F);
 k = 1;
@@ -17,9 +19,9 @@ log_EKF = [];
 
 %Variable initialization for correction when there are different time sampling
 
-selection_vector = [false false]';  % measurement selection at current iteration
-flag = [0 0]';  % keeps track of the index of the most recent measurements already used for each sensor
-actual_meas = [0 0 0 0 0 0]';   %contains measures at current time
+selection_vector = [false false false]';  % measurement selection at current iteration
+flag = [0 0 0]';  % keeps track of the index of the most recent measurements already used for each sensor
+actual_meas = [0 0 0 0 0 0 0 0 ]';   %contains measures at current time
 
 log_EKF.x_hat(:,1) = X_hat;
 for t = dt:dt:t_max
@@ -32,7 +34,7 @@ for t = dt:dt:t_max
  %getActualMeas returns sensor measures at each step. If the measure has already been used for correction, it is not taken
  %If the measurement does not arrive, then it is not corrected with that sensor.
     
-    [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selection_vector, t);
+    [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv,flag, selection_vector, t);
     
     % correction step
     [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t);
@@ -54,13 +56,12 @@ end
 [vy_estimation] = [log_EKF.x_hat(5,:)];
 [vz_estimation] = [log_EKF.x_hat(6,:)];
 
+
 cutOffFreq = 1; % Frequenza di taglio del filtro (in Hz)
 samplingFreq = 50; % Frequenza di campionamento (in Hz)
 [b, a] = butter(2, cutOffFreq / (samplingFreq / 2), 'low');
 grid on;
-figure(1);
-%figure(2);
-%z_estimation = filter(b, a, z_estimation);
+figure;
 
 plot(t_gps,GPS(1,:),'c');hold on;
 plot(t_gps,GPS(2,:),'g'); hold on;  grid on;
@@ -68,14 +69,6 @@ plot(t_gps,GPS(3,:),'k'); hold on;
 plot(Tc,x_estimation,'b'); hold on;  grid on;
 plot(Tc,y_estimation,'r'); hold on;
 plot(Tc,z_estimation,'m'); hold on; grid on;
-
-
-
-%legend('gps East position','estimated East position');
-
-
-%figure(3);
-
 
 legend('gps North position','gps East position', 'gps Down position','estimated North position','estimated East position','estimated Down position');
 xlabel('T[s]'); ylabel('Position[m]')
@@ -95,51 +88,82 @@ delta_posizione_z = diff(z_estimation);
 velocita_z = [delta_posizione_z./dt delta_posizione_z(end)/dt];
 velocita_z = filter(b, a, velocita_z);
 
-figure(3);
+
+
+figure;
 plot(Tc,velocita_x,'c');hold on;
 plot(Tc,vx_estimation,'b'); hold on;  grid on;
-legend('gps North velocity','estimated North velocity')
+legend('estimated North position derivative','estimated North velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]')
-figure(4)
+
+figure;
 plot(Tc,velocita_y,'g'); hold on;  grid on;
 plot(Tc,vy_estimation,'r'); hold on;
-xlabel('T[s]'); ylabel('Velocity[m/s]')
-legend('gps East velocity','estimated East velocity')
-figure(5)
+xlabel('T[s]'); ylabel('Velocity[m/s]');
+legend('estimated East position derivative','estimated East velocity');
+
+figure;
 plot(Tc,velocita_z,'k'); hold on;
 plot(Tc,vz_estimation,'m'); hold on; grid on;
-legend('gps Down velocity','estimated Down velocity');
-xlabel('T[s]'); ylabel('Velocity[m/s]')
+legend('estimated Down position derivative','estimated Down velocity');
+xlabel('T[s]'); ylabel('Velocity[m/s]');
 
-figure(6);
-plot(t_imu,Imu(1,:),'c', LineWidth=4.5);hold on;
-plot(Tc,ax_estimation,'b', LineWidth=1.5); hold on;  grid on;
-legend('gps North acceleration','estimated North acceleration')
-xlabel('T[s]'); ylabel('Acceleration[m/s^{2}]')
-figure(7);
-plot(t_imu,Imu(2,:),'c', LineWidth=4.5);hold on;
-plot(Tc,ay_estimation,'r', LineWidth=1.5); hold on;
-legend('gps East acceleration','estimated East acceleration')
-xlabel('T[s]'); ylabel('Acceleration[m/s^{2}]')
-figure(8);
-plot(t_imu,Imu(3,:),'k', LineWidth=4.5); hold on;
-plot(Tc,az_estimation,'m',LineWidth=1.5); hold on; grid on;
-legend('gps Down acceleration','estimated Down acceleration')
-xlabel('T[s]'); ylabel('Acceleration[m/s^{2}]')
+figure;
+plot(t_imu,Imu(1,:),'c', LineWidth=1);hold on;
+plot(Tc,ax_estimation,'b', LineWidth=1); hold on;  grid on;
+legend('gps North acceleration','estimated North acceleration');
+xlabel('T[s]'); ylabel('Acceleration[m/s^{2}]');
 
-figure(9)
-plot(DATA(12290:24577,[7]+19),'b');hold on
-plot(z_estimation);
+figure;
+plot(t_imu,Imu(2,:),'c', LineWidth=1);hold on;
+plot(Tc,ay_estimation,'r', LineWidth=1); hold on; grid on;
+legend('gps East acceleration','estimated East acceleration');
+xlabel('T[s]'); ylabel('Acceleration[m/s^{2}]');
 
-figure(10)
-plot(DATA(12290:24577,[1]+19),'b');hold on
-plot(x_estimation);
+figure;
+plot(t_imu,Imu(3,:),'k', LineWidth=1); hold on;
+plot(Tc,az_estimation,'m',LineWidth=1); hold on; grid on;
+legend('gps Down acceleration','estimated Down acceleration');
+xlabel('T[s]'); ylabel('Acceleration[m/s^{2}]');
 
-figure(11)
-plot(DATA(12290:24577,[4]+19),'b');hold on
-plot(y_estimation);
+figure;
+plot(Td,DATA(12290:24577,[7]+19),'b');hold on; grid on;
+plot(Tc,z_estimation,'r');
+legend('prof z estimate','our z estimate');
+xlabel('T[s]'); ylabel('Position[m]');
 
+figure;
+plot(Td,DATA(12290:24577,[1]+19),'b');hold on; grid on;
+plot(Tc,x_estimation);
+legend('prof x estimate','our x estimate');
+xlabel('T[s]'); ylabel('Position[m]');
 
+figure;
+plot(Td,DATA(12290:24577,[4]+19),'b');hold on; grid on;
+plot(Tc,y_estimation);
+legend('prof y estimate','our y estimate');
+xlabel('T[s]'); ylabel('Position[m]');
+
+figure;
+plot(Td, DATA(12290:24577,[1]+26),'b'); hold on; grid on;
+plot(Tc, vz_estimation,'r');
+legend('professor estimated Down velocity','our estimated Down velocity');
+xlabel('T[s]'); ylabel('Velocity[m/s]');
+
+figure;
+plot(Td, DATA(12290:24577,[1]+23),'b'); hold on; grid on;
+plot(Tc, vy_estimation,'r');
+legend('professor estimated East velocity','our estimated East velocity');
+xlabel('T[s]'); ylabel('Velocity[m/s]');
+
+figure;
+plot(Td, DATA(12290:24577,[1]+20),'b'); hold on; grid on;
+plot(Tc, vx_estimation,'r');
+legend('professor estimated North velocity','our estimated North velocity');
+xlabel('T[s]'); ylabel('Velocity[m/s]');
+
+pause()
+close all;
 %Prediction step: it been used acceleration measures from IMU
 function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,Imu)
 F = feval(f,dt); %F matrix depends on the sampling time
@@ -148,7 +172,7 @@ X_hat = F*X_hat;
 P = F*P*F'+Q;
 end
 
-function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selection_vector,t)
+function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv,flag, selection_vector,t)
     count = 0;
     actual_meas = [];
     count_size_meas = 0;
@@ -156,6 +180,7 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
     while(((flag(1)) < size(ta.data,3)) && ta.time(flag(1)+1)-t <= eps)
         count = count + 1;
         flag(1) = flag(1) + 1;
+        flag(2) = flag(2) + 1;
     end
     count_size_meas = 0;
     if(count == 0)
@@ -163,7 +188,7 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
     else
         count_size_meas = count_size_meas + 1;
         selection_vector(1) = true;     
-        actual_meas = ta.data(:,flag(1));
+        actual_meas = [ta.data(:,flag(1));tv.data(1:2,flag(2))];
 %         if t == 5 || t == 10 || t == 15 || t == 20 || t == 25 || t == 100 || t == 110 || t == 115
 %             actual_meas = actual_meas+30*rand(size(actual_meas));
 %         end     
@@ -172,19 +197,19 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,flag, selec
 
     %for imu
     count= 0;
-    while(((flag(2)) < size(ts.data,3)) && ts.time(flag(2)+1)-t <= eps)
+    while(((flag(3)) < size(ts.data,3)) && ts.time(flag(3)+1)-t <= eps)
         count = count + 1;
-        flag(2) = flag(2) + 1;
+        flag(3) = flag(3) + 1;
     end
     if(count == 0)
-        selection_vector(2) = false;    
+        selection_vector(3) = false;    
     else
         if(count_size_meas > 0)
-            selection_vector(2) = true;    
-            actual_meas = [actual_meas;ts.data(:,flag(2))];    
+            selection_vector(3) = true;    
+            actual_meas = [actual_meas;ts.data(:,flag(3))];    
         else
-            selection_vector(2) = true;    
-            actual_meas = ts.data(:,flag(2));     
+            selection_vector(3) = true;    
+            actual_meas = ts.data(:,flag(3));     
         end
     end
 end
@@ -192,17 +217,17 @@ end
 
 function [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t)
     counter = 0;
-    if selection_vector(1) == false  %if there aren't any information of position
-        H(1:3,:) = [];
-        R(1:3,:) = [];
-        R(:,1:3) = [];
-        counter = counter+3;
+    if selection_vector(1) == false  %if there aren't any information of position or velocity
+        H(1:5,:) = [];
+        R(1:5,:) = [];
+        R(:,1:5) = [];
+        counter = counter+5;
     end
 
-    if selection_vector(2) == false  %if there aren't any information of acceleration
-        H(4-counter:6-counter,:) = [];
-        R(4-counter:6-counter,:) = [];
-        R(:,4-counter:6-counter) = [];
+    if selection_vector(3) == false  %if there aren't any information of acceleration
+        H(6-counter:8-counter,:) = [];
+        R(6-counter:8-counter,:) = [];
+        R(:,6-counter:8-counter) = [];
     end
 
     

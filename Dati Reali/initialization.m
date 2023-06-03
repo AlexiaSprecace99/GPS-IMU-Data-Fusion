@@ -39,17 +39,17 @@ F = [eye(3) T*eye(3) (T^2)*eye(3)/2; zeros(3) eye(3) T*eye(3); zeros(3) zeros(3)
 %acceleration)
 dt_gps = 0.1; %Sampling Time for the Gps sensor
 dt_imu = 1/50; %Sampling Time for the IMU
-std_dev_pos_x = 0.01; %Standard Deviation for the GPS
-std_dev_pos_y = 0.01;
+std_dev_pos_x = 1; %Standard Deviation for the GPS
+std_dev_pos_y = 1;
 std_dev_pos_z = 3;
-%std_dev_vel = 0.1; %Standard Deviation for GPS velocity
+std_dev_vel = 0.5; %Standard Deviation for GPS velocity
 std_dev_imu = 0.01; %Standard Deviation for the IMU
 R_pos = blkdiag(std_dev_pos_x,std_dev_pos_y,std_dev_pos_z)^2; %Position variance matrix 
-%R_vel = blkdiag(std_dev_vel,std_dev_vel,std_dev_vel)^2; %Velocity variance matrix
-R_imu = blkdiag(std_dev_imu,std_dev_imu,0.5)^2; %Imu variance matrix
+R_vel = blkdiag(std_dev_vel,std_dev_vel)^2; %Velocity variance matrix
+R_imu = blkdiag(std_dev_imu,std_dev_imu,std_dev_imu)^2; %Imu variance matrix
 
 %Covariance Matrix of the process noise
-Q = [0.01*eye(2) zeros(2,1) zeros(2,3) zeros(2,3); 0 0 0.01 0 0 0 0 0 0; zeros(2,3) 0.1*eye(2) zeros(2,4); 0 0 0 0 0 0.01 0 0 0 ; zeros(2,6) 0.01*eye(2) zeros(2,1); zeros(1,8) 0.01];
+Q = blkdiag(0.01,0.01,0.01,0.01,0.01,0.01,0.1,0.1,0.1);
 
 %Measure Matrix for position GPS
 H_gps = [eye(3) zeros(3) zeros(3)];
@@ -64,10 +64,11 @@ H_imu = [zeros(3) zeros(3) eye(3)];
 t_max = 250.12;
 
 %Measure matrix 
-H = [eye(3) zeros(3) zeros(3);zeros(3) zeros(3) eye(3)];
+H = [eye(3) zeros(3) zeros(3);zeros(2,3) [1 0 0; 0 1 0] zeros(2,3);zeros(3) zeros(3) eye(3)];
+%H = [eye(3) zeros(3) zeros(3);zeros(3) zeros(3) eye(3)];
 
 %Covariance matrix for sensor noise
-R = blkdiag(R_pos,R_imu);
+R = blkdiag(R_pos,R_vel,R_imu);
 
 load('LOG00054_parsed_seg3.mat');
 load('tgps.mat');
@@ -116,9 +117,9 @@ tgps2 = tgps2 - 249.9600070;
 
 %Interpolation 10hz
 t_new = 0:1/10:max(t);
-X_interp = interp1(tgps2, X, t_new,'spline');
-Y_interp = interp1(tgps2, Y, t_new,'spline');
-Z_interp = interp1(tgps2, Z, t_new,'spline');
+X_interp = interp1(tgps2, X, t_new,'linear');
+Y_interp = interp1(tgps2, Y, t_new,'linear');
+Z_interp = interp1(tgps2, Z, t_new,'linear');
 
 GPS(1,:) = X_interp;
 GPS(2,:) = Y_interp;
@@ -147,9 +148,9 @@ timu = timu - 249.960007;
 
 t_new_a = 0:1/50:max(t_a);
 
-AX_interp = interp1(timu, acceleration(1,:), t_new_a,'spline');
-AY_interp = interp1(timu, acceleration(2,:), t_new_a,'spline');
-AZ_interp = interp1(timu, acceleration(3,:), t_new_a,'spline');
+AX_interp = interp1(timu, acceleration(1,:), t_new_a,'linear');
+AY_interp = interp1(timu, acceleration(2,:), t_new_a,'linear');
+AZ_interp = interp1(timu, acceleration(3,:), t_new_a,'linear');
 
 Imu(1,:) = AX_interp;
 Imu(2,:) = AY_interp;
