@@ -57,6 +57,14 @@ end
 [vy_estimation] = [log_EKF.x_hat(5,:)];
 [vz_estimation] = [log_EKF.x_hat(6,:)];
 
+X_p_interp = interp1(timu,DATA(12290:24577,[1]+19),t_new_a,'linear');
+Y_p_interp = interp1(timu,DATA(12290:24577,[4]+19),t_new_a,'linear');
+Z_p_interp = interp1(timu,DATA(12290:24577,[7]+19),t_new_a,'linear');
+
+VX_p_interp = interp1(timu,DATA(12290:24577,[1]+20),t_new_a,'linear');
+VY_p_interp = interp1(timu,DATA(12290:24577,[1]+23),t_new_a,'linear');
+VZ_p_interp = interp1(timu,DATA(12290:24577,[1]+26),t_new_a,'linear');
+
 cutOffFreq = 1; % Frequenza di taglio del filtro (in Hz)
 samplingFreq = 50; % Frequenza di campionamento (in Hz)
 [b, a] = butter(2, cutOffFreq / (samplingFreq / 2), 'low');
@@ -127,37 +135,37 @@ legend('gps Down acceleration','estimated Down acceleration');
 xlabel('T[s]'); ylabel('Acceleration[m/s^{2}]');
 
 figure;
-plot(Td,DATA(12290:24577,[7]+19),'b');hold on; grid on;
+plot(Tc,Z_p_interp,'b');hold on; grid on;
 plot(Tc,z_estimation,'r');
 legend('prof z estimate','our z estimate');
 xlabel('T[s]'); ylabel('Position[m]');
 
 figure;
-plot(Td,DATA(12290:24577,[1]+19),'b');hold on; grid on;
+plot(Tc,X_p_interp,'b');hold on; grid on;
 plot(Tc,x_estimation);
 legend('prof x estimate','our x estimate');
 xlabel('T[s]'); ylabel('Position[m]');
 
 figure;
-plot(Td,DATA(12290:24577,[4]+19),'b');hold on; grid on;
+plot(Tc,Y_p_interp,'b');hold on; grid on;
 plot(Tc,y_estimation);
 legend('prof y estimate','our y estimate');
 xlabel('T[s]'); ylabel('Position[m]');
 
 figure;
-plot(Td, DATA(12290:24577,[1]+26),'b'); hold on; grid on;
+plot(Tc, VZ_p_interp,'b'); hold on; grid on;
 plot(Tc, vz_estimation,'r');
 legend('professor estimated Down velocity','our estimated Down velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]');
 
 figure;
-plot(Td, DATA(12290:24577,[1]+23),'b'); hold on; grid on;
+plot(Tc, VY_p_interp,'b'); hold on; grid on;
 plot(Tc, vy_estimation,'r');
 legend('professor estimated East velocity','our estimated East velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]');
 
 figure;
-plot(Td, DATA(12290:24577,[1]+20),'b'); hold on; grid on;
+plot(Tc, VX_p_interp,'b'); hold on; grid on;
 plot(Tc, vx_estimation,'r');
 legend('professor estimated North velocity','our estimated North velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]');

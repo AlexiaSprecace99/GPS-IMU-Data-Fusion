@@ -1,4 +1,4 @@
-%In this Script there is an implementation of a Kalman Filter for GPS/IMU data fusion
+  %In this Script there is an implementation of a Kalman Filter for GPS/IMU data fusion
 %in the standard form prediction/correction without the addition of contextual aspect
 
 %Measure
@@ -7,8 +7,6 @@
 % acc = log_vars.acceleration_gen;
 % meas = [pos;vel;acc];
 initialization 
-rand_pos = 0.01*randn(3,1);
-rand_acc = 0.05*randn(3,1);
 Tc = 0:0.02:t_max;
 Td = 0:0.02:245.74;
 Td = Td*(max(Tc)/max(Td));
@@ -28,7 +26,9 @@ for t = dt:dt:t_max
     %prediction step
     [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,Imu);
     log_EKF.x_hat(:,k+1) = X_hat;
-
+%     log_KF(k).x_hat_pred= X_hat;
+%     log_KF(k).F_matrix = F;
+%     log_KF(k).P_pred = P;
     %[actual_meas, selection_vector, flag] = getActualMeas(x,y,z,vx,vy,vz,ax,ay,az,flag,selection_vector, k, dt);
                                                        
  %getActualMeas returns sensor measures at each step. If the measure has already been used for correction, it is not taken
@@ -38,7 +38,8 @@ for t = dt:dt:t_max
     
     % correction step
     [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t);
-
+%     log_KF(k).x_hat_corr= X_hat;
+%     log_KF(k).P_corr = P;
 
 %     error_x(1,k) = position(1,k)-log_EKF.x_hat(1,k);
 %     error_y(1,k) = position(2,k)-log_EKF.x_hat(2,k);
@@ -56,6 +57,13 @@ end
 [vy_estimation] = [log_EKF.x_hat(5,:)];
 [vz_estimation] = [log_EKF.x_hat(6,:)];
 
+ X_p_interp = interp1(timu,DATA(12290:24577,[1]+19),t_new_a,'linear');
+Y_p_interp = interp1(timu,DATA(12290:24577,[4]+19),t_new_a,'linear');
+Z_p_interp = interp1(timu,DATA(12290:24577,[7]+19),t_new_a,'linear');
+
+VX_p_interp = interp1(timu,DATA(12290:24577,[1]+20),t_new_a,'linear');
+VY_p_interp = interp1(timu,DATA(12290:24577,[1]+23),t_new_a,'linear');
+VZ_p_interp = interp1(timu,DATA(12290:24577,[1]+26),t_new_a,'linear');
 
 cutOffFreq = 1; % Frequenza di taglio del filtro (in Hz)
 samplingFreq = 50; % Frequenza di campionamento (in Hz)
@@ -127,43 +135,40 @@ legend('gps Down acceleration','estimated Down acceleration');
 xlabel('T[s]'); ylabel('Acceleration[m/s^{2}]');
 
 figure;
-plot(Td,DATA(12290:24577,[7]+19),'b');hold on; grid on;
+plot(Tc,Z_p_interp,'b');hold on; grid on;
 plot(Tc,z_estimation,'r');
 legend('prof z estimate','our z estimate');
 xlabel('T[s]'); ylabel('Position[m]');
 
 figure;
-plot(Td,DATA(12290:24577,[1]+19),'b');hold on; grid on;
+plot(Tc,X_p_interp,'b');hold on; grid on;
 plot(Tc,x_estimation);
 legend('prof x estimate','our x estimate');
 xlabel('T[s]'); ylabel('Position[m]');
 
 figure;
-plot(Td,DATA(12290:24577,[4]+19),'b');hold on; grid on;
+plot(Tc,Y_p_interp,'b');hold on; grid on;
 plot(Tc,y_estimation);
 legend('prof y estimate','our y estimate');
 xlabel('T[s]'); ylabel('Position[m]');
 
 figure;
-plot(Td, DATA(12290:24577,[1]+26),'b'); hold on; grid on;
+plot(Tc, VZ_p_interp,'b'); hold on; grid on;
 plot(Tc, vz_estimation,'r');
 legend('professor estimated Down velocity','our estimated Down velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]');
 
 figure;
-plot(Td, DATA(12290:24577,[1]+23),'b'); hold on; grid on;
+plot(Tc, VY_p_interp,'b'); hold on; grid on;
 plot(Tc, vy_estimation,'r');
 legend('professor estimated East velocity','our estimated East velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]');
 
 figure;
-plot(Td, DATA(12290:24577,[1]+20),'b'); hold on; grid on;
+plot(Tc, VX_p_interp,'b'); hold on; grid on;
 plot(Tc, vx_estimation,'r');
 legend('professor estimated North velocity','our estimated North velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]');
-
-pause()
-close all;
 %Prediction step: it been used acceleration measures from IMU
 function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,Imu)
 F = feval(f,dt); %F matrix depends on the sampling time
@@ -198,7 +203,7 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv,flag, se
     %for imu
     count= 0;
     while(((flag(3)) < size(ts.data,3)) && ts.time(flag(3)+1)-t <= eps)
-        count = count + 1;
+         count = count + 1;
         flag(3) = flag(3) + 1;
     end
     if(count == 0)
