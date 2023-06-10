@@ -22,10 +22,10 @@ flag = [0 0 0]';  % keeps track of the index of the most recent measurements alr
 actual_meas = [0 0 0 0 0 0 0 0 ]';   %contains measures at current time
 
 log_EKF.x_hat(:,1) = X_hat;
-for t = dt:dt:t_max
+for t = 0:dt:t_max
     %prediction step
     [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,Imu);
-    log_EKF.x_hat(:,k+1) = X_hat;
+    log_EKF.x_hat(:,k) = X_hat;
 %     log_KF(k).x_hat_pred= X_hat;
 %     log_KF(k).F_matrix = F;
 %     log_KF(k).P_pred = P;
@@ -69,17 +69,22 @@ cutOffFreq = 1; % Frequenza di taglio del filtro (in Hz)
 samplingFreq = 50; % Frequenza di campionamento (in Hz)
 [b, a] = butter(2, cutOffFreq / (samplingFreq / 2), 'low');
 grid on;
+
 figure;
-
 plot(t_gps,GPS(1,:),'c');hold on;
-plot(t_gps,GPS(2,:),'g'); hold on;  grid on;
-plot(t_gps,GPS(3,:),'k'); hold on;
 plot(Tc,x_estimation,'b'); hold on;  grid on;
+legend('gps North position','estimated North position');
+xlabel('T[s]'); ylabel('Position[m]');
+figure;
+plot(t_gps,GPS(2,:),'g'); hold on;  grid on;
 plot(Tc,y_estimation,'r'); hold on;
+legend('gps East position','estimated East position');
+xlabel('T[s]'); ylabel('Position[m]');
+figure;
+plot(t_gps,GPS(3,:),'k'); hold on;
 plot(Tc,z_estimation,'m'); hold on; grid on;
-
-legend('gps North position','gps East position', 'gps Down position','estimated North position','estimated East position','estimated Down position');
-xlabel('T[s]'); ylabel('Position[m]')
+legend('gps Down position','estimated Down position');
+xlabel('T[s]'); ylabel('Position[m]');
 
 
 delta_posizione_x = diff(x_estimation);
@@ -137,37 +142,37 @@ xlabel('T[s]'); ylabel('Acceleration[m/s^{2}]');
 figure;
 plot(Tc,Z_p_interp,'b');hold on; grid on;
 plot(Tc,z_estimation,'r');
-legend('prof z estimate','our z estimate');
+legend('Prof Down position estimate','Our Down position estimate');
 xlabel('T[s]'); ylabel('Position[m]');
 
 figure;
 plot(Tc,X_p_interp,'b');hold on; grid on;
 plot(Tc,x_estimation);
-legend('prof x estimate','our x estimate');
+legend('Prof North position estimate','Our North position estimate');
 xlabel('T[s]'); ylabel('Position[m]');
 
 figure;
 plot(Tc,Y_p_interp,'b');hold on; grid on;
 plot(Tc,y_estimation);
-legend('prof y estimate','our y estimate');
+legend('Prof East position estimate','Our East position estimate');
 xlabel('T[s]'); ylabel('Position[m]');
 
 figure;
 plot(Tc, VZ_p_interp,'b'); hold on; grid on;
 plot(Tc, vz_estimation,'r');
-legend('professor estimated Down velocity','our estimated Down velocity');
+legend('Prof estimated Down velocity','Our estimated Down velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]');
 
 figure;
 plot(Tc, VY_p_interp,'b'); hold on; grid on;
 plot(Tc, vy_estimation,'r');
-legend('professor estimated East velocity','our estimated East velocity');
+legend('Prof estimated East velocity','Our estimated East velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]');
 
 figure;
 plot(Tc, VX_p_interp,'b'); hold on; grid on;
 plot(Tc, vx_estimation,'r');
-legend('professor estimated North velocity','our estimated North velocity');
+legend('Prof estimated North velocity','Our estimated North velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]');
 %Prediction step: it been used acceleration measures from IMU
 function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,Imu)

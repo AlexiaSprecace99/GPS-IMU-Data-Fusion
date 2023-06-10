@@ -23,10 +23,10 @@ Tc = 0:0.02:t_max;
 Td = 0:0.02:245.74;
 Td = Td*(max(Tc)/max(Td));
 log_EKF.x_hat(:,1) = X_hat;
-for t = dt:dt:t_max
+for t = 0:dt:t_max
     %prediction step
     [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,Imu);
-    log_EKF.x_hat(:,k+1) = X_hat;
+    log_EKF.x_hat(:,k) = X_hat;
 
     
     [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv,flag, selection_vector,t);
@@ -72,14 +72,19 @@ grid on;
 
 figure;
 plot(t_gps,GPS(1,:),'c');hold on;
-plot(t_gps,GPS(2,:),'g'); hold on;  grid on;
-plot(t_gps,GPS(3,:),'k'); hold on;
 plot(Tc,x_estimation,'b'); hold on;  grid on;
+legend('gps North position','estimated North position');
+xlabel('T[s]'); ylabel('Position[m]');
+figure;
+plot(t_gps,GPS(2,:),'g'); hold on;  grid on;
 plot(Tc,y_estimation,'r'); hold on;
+legend('gps East position','estimated East position');
+xlabel('T[s]'); ylabel('Position[m]');
+figure;
+plot(t_gps,GPS(3,:),'k'); hold on;
 plot(Tc,z_estimation,'m'); hold on; grid on;
-
-legend('gps North position','gps East position', 'gps Down position','estimated North position','estimated East position','estimated Down position');
-xlabel('T[s]'); ylabel('Position[m]')
+legend('gps Down position','estimated Down position');
+xlabel('T[s]'); ylabel('Position[m]');
 
 
 delta_posizione_x = diff(x_estimation);
