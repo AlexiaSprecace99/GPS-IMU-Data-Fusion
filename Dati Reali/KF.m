@@ -68,21 +68,22 @@ VZ_p_interp = interp1(timu,DATA(12290:24577,[1]+26),t_new_a,'linear');
 cutOffFreq = 1; % Frequenza di taglio del filtro (in Hz)
 samplingFreq = 50; % Frequenza di campionamento (in Hz)
 [b, a] = butter(2, cutOffFreq / (samplingFreq / 2), 'low');
-grid on;
 
 figure;
-plot(t_gps,GPS(1,:),'c');hold on;
-plot(Tc,x_estimation,'b'); hold on;  grid on;
+plot(t_gps,GPS(1,:),'b');hold on;
+plot(Tc,x_estimation,'r'); hold on;  grid on;
 legend('gps North position','estimated North position');
 xlabel('T[s]'); ylabel('Position[m]');
+
 figure;
-plot(t_gps,GPS(2,:),'g'); hold on;  grid on;
+plot(t_gps,GPS(2,:),'b'); hold on;  grid on;
 plot(Tc,y_estimation,'r'); hold on;
 legend('gps East position','estimated East position');
 xlabel('T[s]'); ylabel('Position[m]');
+
 figure;
-plot(t_gps,GPS(3,:),'k'); hold on;
-plot(Tc,z_estimation,'m'); hold on; grid on;
+plot(t_gps,GPS(3,:),'b'); hold on;
+plot(Tc,z_estimation,'r'); hold on; grid on;
 legend('gps Down position','estimated Down position');
 xlabel('T[s]'); ylabel('Position[m]');
 
@@ -104,38 +105,51 @@ velocita_z = filter(b, a, velocita_z);
 
 
 figure;
-plot(Tc,velocita_x,'c');hold on;
-plot(Tc,vx_estimation,'b'); hold on;  grid on;
+plot(Tc,velocita_x,'b');hold on;
+plot(Tc,vx_estimation,'r'); hold on;  grid on;
 legend('estimated North position derivative','estimated North velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]')
 
 figure;
-plot(Tc,velocita_y,'g'); hold on;  grid on;
+plot(Tc,velocita_y,'b'); hold on;  grid on;
 plot(Tc,vy_estimation,'r'); hold on;
 xlabel('T[s]'); ylabel('Velocity[m/s]');
 legend('estimated East position derivative','estimated East velocity');
 
 figure;
-plot(Tc,velocita_z,'k'); hold on;
-plot(Tc,vz_estimation,'m'); hold on; grid on;
+plot(Tc,velocita_z,'b'); hold on;
+plot(Tc,vz_estimation,'r'); hold on; grid on;
 legend('estimated Down position derivative','estimated Down velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]');
 
 figure;
-plot(t_imu,Imu(1,:),'c', LineWidth=1);hold on;
-plot(Tc,ax_estimation,'b', LineWidth=1); hold on;  grid on;
+plot(Tc,VX_p_interp,'b'); hold on;
+plot(Tc,vz_estimation,'r'); hold on; grid on;
+legend('measured North velocity','estimated North velocity');
+xlabel('T[s]'); ylabel('Velocity[m/s]');
+
+figure;
+plot(Tc,VY_p_interp,'b'); hold on;
+plot(Tc,vz_estimation,'r'); hold on; grid on;
+legend('measured East velocity','estimated East velocity');
+xlabel('T[s]'); ylabel('Velocity[m/s]');
+
+
+figure;
+plot(t_imu,Imu(1,:),'b');hold on;
+plot(Tc,ax_estimation,'r'); hold on;  grid on;
 legend('gps North acceleration','estimated North acceleration');
 xlabel('T[s]'); ylabel('Acceleration[m/s^{2}]');
 
 figure;
-plot(t_imu,Imu(2,:),'c', LineWidth=1);hold on;
-plot(Tc,ay_estimation,'r', LineWidth=1); hold on; grid on;
+plot(t_imu,Imu(2,:),'b');hold on;
+plot(Tc,ay_estimation,'r'); hold on; grid on;
 legend('gps East acceleration','estimated East acceleration');
 xlabel('T[s]'); ylabel('Acceleration[m/s^{2}]');
 
 figure;
-plot(t_imu,Imu(3,:),'k', LineWidth=1); hold on;
-plot(Tc,az_estimation,'m',LineWidth=1); hold on; grid on;
+plot(t_imu,Imu(3,:),'b'); hold on;
+plot(Tc,az_estimation,'r'); hold on; grid on;
 legend('gps Down acceleration','estimated Down acceleration');
 xlabel('T[s]'); ylabel('Acceleration[m/s^{2}]');
 
@@ -178,7 +192,7 @@ xlabel('T[s]'); ylabel('Velocity[m/s]');
 function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,Imu)
 F = feval(f,dt); %F matrix depends on the sampling time
 X_hat(7:9,1) = Imu(:,k);
-X_hat = F*X_hat;
+X_hat = F*X_hat + [dt^3/6; dt^3/6; dt^3/6; dt^2 /2; dt^2/2; dt^2/2; dt;dt;dt]* 0.01*randn(1);
 P = F*P*F'+Q;
 end
 
