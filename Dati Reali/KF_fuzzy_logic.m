@@ -94,20 +94,20 @@ velocita_z = filter(b, a, velocita_z);
 
 
 figure;
-plot(Tc,velocita_x,'b');hold on;
-plot(Tc,vx_estimation,'r'); hold on;  grid on;
+plot(Tc,velocita_x,'g');hold on;
+plot(Tc,vx_estimation,'m'); hold on;  grid on;
 legend('estimated North position derivative','estimated North velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]')
 
 figure;
-plot(Tc,velocita_y,'b'); hold on;  grid on;
-plot(Tc,vy_estimation,'r'); hold on;
+plot(Tc,velocita_y,'g'); hold on;  grid on;
+plot(Tc,vy_estimation,'m'); hold on;
 xlabel('T[s]'); ylabel('Velocity[m/s]');
 legend('estimated East position derivative','estimated East velocity');
 
 figure;
-plot(Tc,velocita_z,'b'); hold on;
-plot(Tc,vz_estimation,'r'); hold on; grid on;
+plot(Tc,velocita_z,'g'); hold on;
+plot(Tc,vz_estimation,'m'); hold on; grid on;
 legend('estimated Down position derivative','estimated Down velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]');
 
@@ -150,7 +150,7 @@ xlabel('T[s]'); ylabel('Position[m]');
 
 figure;
 plot(Tc,X_p_interp,'b');hold on; grid on;
-plot(Tc,x_estimation);
+plot(Tc,x_estimation,'r');
 legend('Prof North position estimate','Our North position estimate');
 xlabel('T[s]'); ylabel('Position[m]');
 
@@ -181,7 +181,7 @@ xlabel('T[s]'); ylabel('Velocity[m/s]');
 function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,Imu)
 F = feval(f,dt);
 X_hat(7:9,1) = Imu(:,k);
-X_hat = F*X_hat;
+X_hat = F*X_hat +[dt^3/6;dt^3/6;dt^3/6;dt^2/2;dt^2/2;dt^2/2;dt;dt;dt]*0.01*randn(1);
 P = F*P*F'+Q;
 end
 
@@ -203,9 +203,9 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv,flag, se
         selection_vector(1) = true;     
          actual_meas = [ta.data(:,flag(1));tv.data(1:2,flag(2))];    
         %actual_meas = [actual_meas;tv.data(:,flag(1))];
-%         if t == 5 || t == 10 || t == 15 || t == 20 || t == 25 || t == 100 || t == 110 || t == 115 
-%             actual_meas = actual_meas+10*rand(size(actual_meas));
-%         end
+        if t == 5 || t == 10 || t == 15 || t == 20 || t == 25 || t == 100 || t == 110 || t == 115 
+            actual_meas = actual_meas+10*rand(size(actual_meas));
+        end
     end
 
 

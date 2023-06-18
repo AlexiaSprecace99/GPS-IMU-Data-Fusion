@@ -105,20 +105,20 @@ velocita_z = filter(b, a, velocita_z);
 
 
 figure;
-plot(Tc,velocita_x,'b');hold on;
-plot(Tc,vx_estimation,'r'); hold on;  grid on;
+plot(Tc,velocita_x,'g');hold on;
+plot(Tc,vx_estimation,'m'); hold on;  grid on;
 legend('estimated North position derivative','estimated North velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]')
 
 figure;
-plot(Tc,velocita_y,'b'); hold on;  grid on;
-plot(Tc,vy_estimation,'r'); hold on;
+plot(Tc,velocita_y,'g'); hold on;  grid on;
+plot(Tc,vy_estimation,'m'); hold on;
 xlabel('T[s]'); ylabel('Velocity[m/s]');
 legend('estimated East position derivative','estimated East velocity');
 
 figure;
-plot(Tc,velocita_z,'b'); hold on;
-plot(Tc,vz_estimation,'r'); hold on; grid on;
+plot(Tc,velocita_z,'g'); hold on;
+plot(Tc,vz_estimation,'m'); hold on; grid on;
 legend('estimated Down position derivative','estimated Down velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]');
 
@@ -213,9 +213,9 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv,flag, se
         count_size_meas = count_size_meas + 1;
         selection_vector(1) = true;     
         actual_meas = [ta.data(:,flag(1));tv.data(1:2,flag(2))];
-%         if t == 5 || t == 10 || t == 15 || t == 20 || t == 25 || t == 100 || t == 110 || t == 115
-%             actual_meas = actual_meas+30*rand(size(actual_meas));
-%         end     
+        if t == 5 || t == 10 || t == 15 || t == 20 || t == 25 || t == 100 || t == 110 || t == 115
+            actual_meas = actual_meas+30*rand(size(actual_meas));
+        end     
     end
 
 
