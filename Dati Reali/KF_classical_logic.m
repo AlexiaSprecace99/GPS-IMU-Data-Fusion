@@ -23,6 +23,7 @@ Tc = 0:0.02:t_max;
 Td = 0:0.02:245.74;
 Td = Td*(max(Tc)/max(Td));
 log_EKF.x_hat(:,1) = X_hat;
+i = 1;
 for t = 0:dt:t_max
     %prediction step
     [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,Imu);
@@ -30,6 +31,12 @@ for t = 0:dt:t_max
 
     
     [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv,flag, selection_vector,t);
+
+     if size(actual_meas,1) >= 4
+        vera_pos(1:3,i) = actual_meas(1:3);
+        i = i+1;
+     end
+
     % correction step
     [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t,k);
 
@@ -71,19 +78,19 @@ samplingFreq = 50; % Frequenza di campionamento (in Hz)
 
 
 figure;
-plot(t_gps,GPS(1,:),'b');hold on;
+plot(t_gps,vera_pos(1,:),'b');hold on;
 plot(Tc,x_estimation,'r'); hold on;  grid on;
 legend('gps North position','estimated North position');
 xlabel('T[s]'); ylabel('Position[m]');
 
 figure;
-plot(t_gps,GPS(2,:),'b'); hold on;  grid on;
+plot(t_gps,vera_pos(2,:),'b'); hold on;  grid on;
 plot(Tc,y_estimation,'r'); hold on;
 legend('gps East position','estimated East position');
 xlabel('T[s]'); ylabel('Position[m]');
 
 figure;
-plot(t_gps,GPS(3,:),'b'); hold on;
+plot(t_gps,vera_pos(3,:),'b'); hold on;
 plot(Tc,z_estimation,'r'); hold on; grid on;
 legend('gps Down position','estimated Down position');
 xlabel('T[s]'); ylabel('Position[m]');
