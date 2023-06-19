@@ -14,12 +14,13 @@ Td = Td*(max(Tc)/max(Td));
 f = matlabFunction(F);
 k = 1;
 log_EKF = [];
-i = 1;
+
 %Variable initialization for correction when there are different time sampling
 
 selection_vector = [false false false]';  % measurement selection at current iteration
 flag = [0 0 0]';  % keeps track of the index of the most recent measurements already used for each sensor
 actual_meas = [0 0 0 0 0 0 0 0 ]';   %contains measures at current time
+
 log_EKF.x_hat(:,1) = X_hat;
 for t = 0:dt:t_max
     %prediction step
@@ -34,16 +35,9 @@ for t = 0:dt:t_max
  %If the measurement does not arrive, then it is not corrected with that sensor.
     
     [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv,flag, selection_vector, t);
-
-     if size(actual_meas,1) >= 4
-        vera_pos(1:3,i) = actual_meas(1:3);
-        i = i+1;
-     end
-
+    
     % correction step
     [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t);
-
-
 %     log_KF(k).x_hat_corr= X_hat;
 %     log_KF(k).P_corr = P;
 
@@ -76,19 +70,19 @@ samplingFreq = 50; % Frequenza di campionamento (in Hz)
 [b, a] = butter(2, cutOffFreq / (samplingFreq / 2), 'low');
 
 figure;
-plot(t_gps,vera_pos(1,:),'b');hold on;
+plot(t_gps,GPS(1,:),'b');hold on;
 plot(Tc,x_estimation,'r'); hold on;  grid on;
 legend('gps North position','estimated North position');
 xlabel('T[s]'); ylabel('Position[m]');
 
 figure;
-plot(t_gps,vera_pos(2,:),'b'); hold on;  grid on;
+plot(t_gps,GPS(2,:),'b'); hold on;  grid on;
 plot(Tc,y_estimation,'r'); hold on;
 legend('gps East position','estimated East position');
 xlabel('T[s]'); ylabel('Position[m]');
 
 figure;
-plot(t_gps,vera_pos(3,:),'b'); hold on;
+plot(t_gps,GPS(3,:),'b'); hold on;
 plot(Tc,z_estimation,'r'); hold on; grid on;
 legend('gps Down position','estimated Down position');
 xlabel('T[s]'); ylabel('Position[m]');
@@ -130,13 +124,13 @@ xlabel('T[s]'); ylabel('Velocity[m/s]');
 
 figure;
 plot(Tc,VX_p_interp,'b'); hold on;
-plot(Tc,vz_estimation,'r'); hold on; grid on;
+plot(Tc,vx_estimation,'r'); hold on; grid on;
 legend('measured North velocity','estimated North velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]');
 
 figure;
 plot(Tc,VY_p_interp,'b'); hold on;
-plot(Tc,vz_estimation,'r'); hold on; grid on;
+plot(Tc,vy_estimation,'r'); hold on; grid on;
 legend('measured East velocity','estimated East velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]');
 
@@ -202,7 +196,7 @@ X_hat = F*X_hat + [dt^3/6; dt^3/6; dt^3/6; dt^2 /2; dt^2/2; dt^2/2; dt;dt;dt]* 0
 P = F*P*F'+Q;
 end
 
-function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv,flag, selection_vector,t)  
+function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv,flag, selection_vector,t)
     count = 0;
     actual_meas = [];
     count_size_meas = 0;
@@ -218,9 +212,9 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv,flag, se
     else
         count_size_meas = count_size_meas + 1;
         selection_vector(1) = true;     
-        actual_meas = [ta.data(:,flag(1));tv.data(1:2,flag(2))];  
+        actual_meas = [ta.data(:,flag(1));tv.data(1:2,flag(2))];
         if t == 5 || t == 10 || t == 15 || t == 20 || t == 25 || t == 100 || t == 110 || t == 115
-            actual_meas = actual_meas+30*rand(size(actual_meas));  
+            actual_meas = actual_meas+30*rand(size(actual_meas));
         end     
     end
 

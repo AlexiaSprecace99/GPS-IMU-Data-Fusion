@@ -114,13 +114,13 @@ xlabel('T[s]'); ylabel('Velocity[m/s]');
 
 figure;
 plot(Tc,VX_p_interp,'b'); hold on;
-plot(Tc,vz_estimation,'r'); hold on; grid on;
+plot(Tc,vx_estimation,'r'); hold on; grid on;
 legend('measured North velocity','estimated North velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]');
 
 figure;
 plot(Tc,VY_p_interp,'b'); hold on;
-plot(Tc,vz_estimation,'r'); hold on; grid on;
+plot(Tc,vy_estimation,'r'); hold on; grid on;
 legend('measured East velocity','estimated East velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]');
 
