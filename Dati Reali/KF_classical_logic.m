@@ -23,7 +23,6 @@ Tc = 0:0.02:t_max;
 Td = 0:0.02:245.74;
 Td = Td*(max(Tc)/max(Td));
 log_EKF.x_hat(:,1) = X_hat;
-i = 1;
 for t = 0:dt:t_max
     %prediction step
     [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,Imu);
@@ -31,15 +30,10 @@ for t = 0:dt:t_max
 
     
     [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv,flag, selection_vector,t);
-
-     if size(actual_meas,1) >= 4
-        vera_pos(1:3,i) = actual_meas(1:3);
-        i = i+1;
-     end
-
     % correction step
-    [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t,k);
-
+    [X_hat, P, q_gps, q_imu] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t,k);
+    q_gps_save(k) = q_gps;
+    q_imu_save(k) = q_imu;
 
 %     error_x(1,k) = trajectory_gen(1,k)-log_EKF.x_hat(1,k);
 %     error_y(1,k) = trajectory_gen(2,k)-log_EKF.x_hat(2,k);
@@ -78,19 +72,19 @@ samplingFreq = 50; % Frequenza di campionamento (in Hz)
 
 
 figure;
-plot(t_gps,vera_pos(1,:),'b');hold on;
+plot(t_gps,GPS(1,:),'b');hold on;
 plot(Tc,x_estimation,'r'); hold on;  grid on;
 legend('gps North position','estimated North position');
 xlabel('T[s]'); ylabel('Position[m]');
 
 figure;
-plot(t_gps,vera_pos(2,:),'b'); hold on;  grid on;
+plot(t_gps,GPS(2,:),'b'); hold on;  grid on;
 plot(Tc,y_estimation,'r'); hold on;
 legend('gps East position','estimated East position');
 xlabel('T[s]'); ylabel('Position[m]');
 
 figure;
-plot(t_gps,vera_pos(3,:),'b'); hold on;
+plot(t_gps,GPS(3,:),'b'); hold on;
 plot(Tc,z_estimation,'r'); hold on; grid on;
 legend('gps Down position','estimated Down position');
 xlabel('T[s]'); ylabel('Position[m]');
@@ -198,11 +192,20 @@ plot(Tc, vx_estimation,'r');
 legend('Prof estimated North velocity','Our estimated North velocity');
 xlabel('T[s]'); ylabel('Velocity[m/s]');
 
+figure;
+plot(Tc, q_gps_save, 'b');hold on;
+yline(7.8, '-'); hold on;
+xlabel('T[s]'); ylabel('q_{GPS}[m]');
+
+figure;
+plot(Tc, q_imu_save, 'b');hold on;
+xlabel('T[s]'); ylabel('q_{IMU}[m]');
+
 
 function  [X_hat, P] = prediction_KF(X_hat, P, Q, dt,f,k,Imu)
 F = feval(f,dt);
 X_hat(7:9,1) = Imu(:,k);
-X_hat = F*X_hat;
+X_hat = F*X_hat+[dt^3/6;dt^3/6;dt^3/6;dt^2/2;dt^2/2;dt^2/2;dt;dt;dt]*0.01*randn(1);
 P = F*P*F'+Q;
 end
 
@@ -225,7 +228,7 @@ function [actual_meas, selection_vector, flag] = getActualMeas(ts,ta,tv,flag, se
          actual_meas = [ta.data(:,flag(1));tv.data(1:2,flag(2))];    
         %actual_meas = [actual_meas;tv.data(:,flag(1))];
         if t == 5 || t == 10 || t == 15 || t == 20 || t == 25 || t == 100 || t == 110 || t == 115 
-            actual_meas = actual_meas+10*rand(size(actual_meas));
+            actual_meas = actual_meas+2*rand(size(actual_meas));
         end
     end
 
@@ -251,7 +254,7 @@ end
 
 
 
-function [X_hat, P] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t,k)
+function [X_hat, P, q_gps, q_imu] = correction_KF(X_hat, P, actual_meas,selection_vector,H,R,t,k)
     counter = 0;
     if selection_vector(1) == false  %if there aren't any information of position
         H(1:5,:) = [];
@@ -314,6 +317,7 @@ if (selection_vector(1) == false && selection_vector(3) == true ) % just Imu mea
     S_imu = R+H*P*H';
     innovation_imu = actual_meas-H*X_hat;
     q_imu = innovation_imu'*inv(S_imu)*innovation_imu;
+    q_gps = 0;
     if(q_imu < 7.8) %takes measure
         L = P*H'*inv(S_imu); %9x6
         X_hat = X_hat + L*innovation_imu; %9x1
@@ -329,6 +333,7 @@ if (selection_vector(1) == true && selection_vector(3) == false) %just Gps measu
     S_gps = R+H*P*H';
     innovation_gps = actual_meas-H*X_hat;
     q_gps = innovation_gps'*inv(S_gps)*innovation_gps;
+    q_imu = 0;
     if(q_gps < 7.8) %takes measure
         L = P*H'*inv(S_gps); %9x6
         X_hat = X_hat + L*innovation_gps; %9x1
@@ -344,6 +349,8 @@ end
 if (selection_vector(1) == false && selection_vector(3) == false )
         X_hat = X_hat;
         P = P;
+        q_gps = 0;
+        q_imu = 0;
 end
 end
 
