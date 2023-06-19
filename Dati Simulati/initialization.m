@@ -22,7 +22,7 @@ Ad_0 = 0;
 X_start = [Pn_0 Pe_0 Pd_0 Vn_0 Ve_0 Vd_0 An_0 Ae_0 Ad_0]';
 
 %Standard Deviation on the Initial State 
-std_dev_init = [0.5 0.5 0.5 0.001 0.001 0.001 0.01 0.01 0.01]';
+std_dev_init = [1 1 1 0.1 0.1 0.1 0.01 0.01 0.01]';
 
 %Initial Estimate
 X_hat = X_start + (std_dev_init).*randn(size(X_start,1),1);
